@@ -17,7 +17,7 @@ Note all the tools are in python. So in the case you need to do batch processing
 
 You always have an LLM at your side to help you with the task. For simple tasks, you could invoke the LLM by running the following command:
 ```
-py310/bin/python ./tools/llm_api.py --prompt "What is the capital of France?"
+py310/bin/python ./tools/llm_api.py --prompt "What is the capital of France?" --provider "anthropic"
 ```
 
 But usually it's a better idea to check the content of the file and use the APIs in the `tools/llm_api.py` file to invoke the LLM if needed.

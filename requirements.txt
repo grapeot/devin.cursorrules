@@ -7,6 +7,8 @@ duckduckgo-search>=4.1.1
 
 # LLM integration
 openai>=1.12.0
+anthropic>=0.42.0
+python-dotenv>=1.0.0
 
 # Testing
 unittest2>=1.1.0 
