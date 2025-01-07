@@ -26,7 +26,15 @@ source py310/bin/activate
 .\py310\Scripts\activate
 ```
 
-2. Install dependencies:
+2. Configure environment variables:
+```bash
+# Copy the example environment file
+cp .env.example .env
+
+# Edit .env with your API keys and configurations
+```
+
+3. Install dependencies:
 ```bash
 # Install required packages
 pip install -r requirements.txt
