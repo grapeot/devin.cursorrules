@@ -34,12 +34,21 @@ def create_llm_client(provider="openai"):
     else:
         raise ValueError(f"Unsupported provider: {provider}")
 
-def query_llm(prompt, client=None, model="", provider="openai"):
+def query_llm(prompt, client=None, model=None, provider="openai"):
     if client is None:
         client = create_llm_client(provider)
     
     try:
-        if provider == "openai":
+        # 設定預設模型
+        if model is None:
+            if provider == "openai":
+                model = "gpt-3.5-turbo"
+            elif provider == "anthropic":
+                model = "claude-3-sonnet-20240229"
+            elif provider == "local":
+                model = "Qwen/Qwen2.5-32B-Instruct-AWQ"
+            
+        if provider == "openai" or provider == "local":
             response = client.chat.completions.create(
                 model=model,
                 messages=[

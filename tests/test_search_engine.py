@@ -44,7 +44,8 @@ class TestSearchEngine(unittest.TestCase):
         search("test query", max_results=2)
 
         # Check debug output
-        self.assertIn("DEBUG: Searching for query: test query", self.stderr.getvalue())
+        expected_debug = "DEBUG: Attempt 1/3 - Searching for query: test query"
+        self.assertIn(expected_debug, self.stderr.getvalue())
         self.assertIn("DEBUG: Found 2 results", self.stderr.getvalue())
 
         # Check search results output
@@ -62,7 +63,7 @@ class TestSearchEngine(unittest.TestCase):
         mock_ddgs_instance.__enter__.return_value.text.assert_called_once_with(
             "test query",
             max_results=2,
-            backend='html'
+            backend='api'
         )
 
     @patch('tools.search_engine.DDGS')

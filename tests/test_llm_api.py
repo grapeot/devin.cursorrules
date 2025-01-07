@@ -35,14 +35,13 @@ class TestLLMAPI(unittest.TestCase):
     @unittest.skipIf(skip_llm_tests, skip_message)
     @patch('tools.llm_api.OpenAI')
     def test_create_llm_client(self, mock_openai):
-        # Test client creation
+        # Test client creation with default provider (openai)
         mock_openai.return_value = self.mock_client
-        client = create_llm_client()
+        client = create_llm_client()  # 使用預設 provider
         
         # Verify OpenAI was called with correct parameters
         mock_openai.assert_called_once_with(
-            base_url="http://192.168.180.137:8006/v1",
-            api_key="not-needed"
+            api_key=os.getenv('OPENAI_API_KEY')  # 使用環境變數中的 API key
         )
         
         self.assertEqual(client, self.mock_client)
@@ -53,15 +52,15 @@ class TestLLMAPI(unittest.TestCase):
         # Set up mock
         mock_create_client.return_value = self.mock_client
         
-        # Test query with default parameters
-        response = query_llm("Test prompt")
+        # Test query with default provider
+        response = query_llm("Test prompt")  # 使用預設 provider
         
         # Verify response
         self.assertEqual(response, "Test response")
         
         # Verify client was called correctly
         self.mock_client.chat.completions.create.assert_called_once_with(
-            model="Qwen/Qwen2.5-32B-Instruct-AWQ",
+            model="gpt-3.5-turbo",  # 使用 OpenAI 的預設模型
             messages=[{"role": "user", "content": "Test prompt"}],
             temperature=0.7
         )
