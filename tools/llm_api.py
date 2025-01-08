@@ -1,5 +1,6 @@
 #!/usr/bin/env /workspace/tmp_windsurf/py310/bin/python3
 
+import google.generativeai as genai
 from openai import OpenAI
 from anthropic import Anthropic
 import argparse
@@ -7,7 +8,6 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 
-# 載入 .env.local 檔案
 env_path = Path('.') / '.env.local'
 load_dotenv(dotenv_path=env_path)
 
@@ -34,10 +34,16 @@ def create_llm_client(provider="openai"):
         return Anthropic(
             api_key=api_key
         )
+    elif provider == "gemini":
+        api_key = os.getenv('GOOGLE_API_KEY')
+        if not api_key:
+            raise ValueError("GOOGLE_API_KEY not found in environment variables")
+        genai.configure(api_key=api_key)
+        return genai
     elif provider == "local":
         return OpenAI(
             base_url="http://192.168.180.137:8006/v1",
-            api_key="not-needed"  # 本地部署可能不需要 API key
+            api_key="not-needed"
         )
     else:
         raise ValueError(f"Unsupported provider: {provider}")
@@ -47,7 +53,7 @@ def query_llm(prompt, client=None, model=None, provider="openai"):
         client = create_llm_client(provider)
     
     try:
-        # 設定預設模型
+        # Set default model
         if model is None:
             if provider == "openai":
                 model = "gpt-3.5-turbo"
@@ -55,6 +61,8 @@ def query_llm(prompt, client=None, model=None, provider="openai"):
                 model = "deepseek-chat"
             elif provider == "anthropic":
                 model = "claude-3-sonnet-20240229"
+            elif provider == "gemini":
+                model = "gemini-pro"
             elif provider == "local":
                 model = "Qwen/Qwen2.5-32B-Instruct-AWQ"
             
@@ -76,6 +84,10 @@ def query_llm(prompt, client=None, model=None, provider="openai"):
                 ]
             )
             return response.content[0].text
+        elif provider == "gemini":
+            model = client.GenerativeModel(model)
+            response = model.generate_content(prompt)
+            return response.text
     except Exception as e:
         print(f"Error querying LLM: {e}")
         return None
@@ -83,20 +95,19 @@ def query_llm(prompt, client=None, model=None, provider="openai"):
 def main():
     parser = argparse.ArgumentParser(description='Query an LLM with a prompt')
     parser.add_argument('--prompt', type=str, help='The prompt to send to the LLM', required=True)
-    parser.add_argument('--provider', type=str, choices=['openai', 'anthropic', 'deepseek'], 
-                       default="openai", help='The API provider to use')
-    parser.add_argument('--model', type=str, 
-                       help='The model to use (default depends on provider)')
+    parser.add_argument('--provider', choices=['openai','anthropic','gemini','local','deepseek'], default='openai', help='The API provider to use')
+    parser.add_argument('--model', type=str, help='The model to use (default depends on provider)')
     args = parser.parse_args()
 
-    # 設定預設模型
     if not args.model:
-        if args.provider == "openai":
+        if args.provider == 'openai':
             args.model = "gpt-3.5-turbo"
         elif args.provider == "deepseek":
             args.model = "deepseek-chat"
-        else:
+        elif args.provider == 'anthropic':
             args.model = "claude-3-5-sonnet-20241022"
+        elif args.provider == 'gemini':
+            args.model = "gemini-2.0-flash-exp"
 
     client = create_llm_client(args.provider)
     response = query_llm(args.prompt, client, model=args.model, provider=args.provider)
