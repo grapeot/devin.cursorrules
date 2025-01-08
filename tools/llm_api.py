@@ -7,9 +7,41 @@ import argparse
 import os
 from dotenv import load_dotenv
 from pathlib import Path
+import sys
 
-env_path = Path('.') / '.env.local'
-load_dotenv(dotenv_path=env_path)
+def load_environment():
+    """Load environment variables from .env files in order of precedence"""
+    # Order of precedence:
+    # 1. System environment variables (already loaded)
+    # 2. .env.local (user-specific overrides)
+    # 3. .env (project defaults)
+    # 4. .env.example (example configuration)
+    
+    env_files = ['.env.local', '.env', '.env.example']
+    env_loaded = False
+    
+    print("Current working directory:", Path('.').absolute(), file=sys.stderr)
+    print("Looking for environment files:", env_files, file=sys.stderr)
+    
+    for env_file in env_files:
+        env_path = Path('.') / env_file
+        print(f"Checking {env_path.absolute()}", file=sys.stderr)
+        if env_path.exists():
+            print(f"Found {env_file}, loading variables...", file=sys.stderr)
+            load_dotenv(dotenv_path=env_path)
+            env_loaded = True
+            print(f"Loaded environment variables from {env_file}", file=sys.stderr)
+            # Print loaded keys (but not values for security)
+            with open(env_path) as f:
+                keys = [line.split('=')[0].strip() for line in f if '=' in line and not line.startswith('#')]
+                print(f"Keys loaded from {env_file}: {keys}", file=sys.stderr)
+    
+    if not env_loaded:
+        print("Warning: No .env files found. Using system environment variables only.", file=sys.stderr)
+        print("Available system environment variables:", list(os.environ.keys()), file=sys.stderr)
+
+# Load environment variables at module import
+load_environment()
 
 def create_llm_client(provider="openai"):
     if provider == "openai":
@@ -56,7 +88,7 @@ def query_llm(prompt, client=None, model=None, provider="openai"):
         # Set default model
         if model is None:
             if provider == "openai":
-                model = "gpt-3.5-turbo"
+                model = "gpt-4o"
             elif provider == "deepseek":
                 model = "deepseek-chat"
             elif provider == "anthropic":

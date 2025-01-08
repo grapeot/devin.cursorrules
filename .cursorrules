@@ -17,8 +17,15 @@ Note all the tools are in python. So in the case you need to do batch processing
 
 You always have an LLM at your side to help you with the task. For simple tasks, you could invoke the LLM by running the following command:
 ```
-py310/bin/python ./tools/llm_api.py --prompt "What is the capital of France?" --provider "anthropic"
+venv/bin/python ./tools/llm_api.py --prompt "What is the capital of France?" --provider "anthropic"
 ```
+
+The LLM API supports multiple providers:
+- OpenAI (default, model: gpt-4o)
+- DeepSeek (model: deepseek-chat)
+- Anthropic (model: claude-3-sonnet-20240229)
+- Gemini (model: gemini-pro)
+- Local LLM (model: Qwen/Qwen2.5-32B-Instruct-AWQ)
 
 But usually it's a better idea to check the content of the file and use the APIs in the `tools/llm_api.py` file to invoke the LLM if needed.
 
@@ -26,7 +33,7 @@ But usually it's a better idea to check the content of the file and use the APIs
 
 You could use the `tools/web_scraper.py` file to scrape the web.
 ```
-py310/bin/python ./tools/web_scraper.py --max-concurrent 3 URL1 URL2 URL3
+venv/bin/python ./tools/web_scraper.py --max-concurrent 3 URL1 URL2 URL3
 ```
 This will output the content of the web pages.
 
@@ -34,7 +41,7 @@ This will output the content of the web pages.
 
 You could use the `tools/search_engine.py` file to search the web.
 ```
-py310/bin/python ./tools/search_engine.py "your search keywords"
+venv/bin/python ./tools/search_engine.py "your search keywords"
 ```
 This will output the search results in the following format:
 ```
@@ -48,7 +55,7 @@ If needed, you can further use the `web_scraper.py` file to scrape the web page 
 
 ## User Specified Lessons
 
-- You have a python venv in ./py310.
+- You have a python venv in ./venv.
 - Include info useful for debugging in the program output.
 - Read the file before you try to edit it.
 - Use LLM to perform flexible text understanding tasks. First test on a few files. After success, make it parallel.
