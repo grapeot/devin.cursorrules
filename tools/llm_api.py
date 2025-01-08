@@ -45,7 +45,7 @@ def query_llm(prompt, client=None, model=None, provider="openai"):
         client = create_llm_client(provider)
     
     try:
-        # 設定預設模型
+        # Set default model
         if model is None:
             if provider == "openai":
                 model = "gpt-3.5-turbo"
