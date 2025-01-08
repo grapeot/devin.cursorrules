@@ -27,6 +27,8 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.env
+.env.example
 
 # vercel
 .vercel
@@ -44,4 +46,7 @@ credentials.json
 **/__pycache__/
 
 # python virtual environment
-/py310/
+/venv/
+
+# pytest
+.pytest_cache/
