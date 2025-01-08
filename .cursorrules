@@ -59,7 +59,5 @@ If needed, you can further use the `web_scraper.py` file to scrape the web page 
 - For search results, ensure proper handling of different character encodings (UTF-8) for international queries
 - Add debug information to stderr while keeping the main output clean in stdout for better pipeline integration
 - When using seaborn styles in matplotlib, use 'seaborn-v0_8' instead of 'seaborn' as the style name due to recent seaborn version changes
-- When using Google's Gemini API, set GRPC_PYTHON_LOG_LEVEL='error' to suppress unnecessary gRPC warnings
-- Default model for Gemini API is "gemini-pro"
 
 # Scratchpad
