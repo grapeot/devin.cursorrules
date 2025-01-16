@@ -57,7 +57,7 @@ def create_llm_client(provider="openai"):
             raise ValueError("AZURE_OPENAI_API_KEY not found in environment variables")
         return AzureOpenAI(
             api_key=api_key,
-            api_version="2024-02-15-preview",
+            api_version="2024-08-01-preview",
             azure_endpoint="https://msopenai.openai.azure.com"
         )
     elif provider == "deepseek":

@@ -151,7 +151,7 @@ class TestLLMAPI(unittest.TestCase):
         client = create_llm_client("azure")
         mock_azure.assert_called_once_with(
             api_key='test-azure-key',
-            api_version="2024-02-15-preview",
+            api_version="2024-08-01-preview",
             azure_endpoint="https://msopenai.openai.azure.com"
         )
         self.assertEqual(client, self.mock_azure_client)
