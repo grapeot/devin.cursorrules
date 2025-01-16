@@ -50,3 +50,6 @@ credentials.json
 
 # pytest
 .pytest_cache/
+
+# vscode
+.vscode/
