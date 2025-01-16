@@ -117,10 +117,22 @@ class TestLLMAPI(unittest.TestCase):
             'OPENAI_API_KEY': 'test-openai-key',
             'DEEPSEEK_API_KEY': 'test-deepseek-key',
             'ANTHROPIC_API_KEY': 'test-anthropic-key',
-            'GOOGLE_API_KEY': 'test-google-key'
+            'GOOGLE_API_KEY': 'test-google-key',
+            'AZURE_OPENAI_API_KEY': 'test-azure-key',
+            'AZURE_OPENAI_MODEL_DEPLOYMENT': 'test-model-deployment'
         })
         self.env_patcher.start()
-    
+        
+        # Set up Azure OpenAI mock
+        self.mock_azure_response = MagicMock()
+        self.mock_azure_choice = MagicMock()
+        self.mock_azure_message = MagicMock()
+        self.mock_azure_message.content = "Test Azure OpenAI response"
+        self.mock_azure_choice.message = self.mock_azure_message
+        self.mock_azure_response.choices = [self.mock_azure_choice]
+        self.mock_azure_client = MagicMock()
+        self.mock_azure_client.chat.completions.create.return_value = self.mock_azure_response
+
     def tearDown(self):
         self.env_patcher.stop()
 
@@ -131,6 +143,18 @@ class TestLLMAPI(unittest.TestCase):
         client = create_llm_client("openai")
         mock_openai.assert_called_once_with(api_key='test-openai-key')
         self.assertEqual(client, self.mock_openai_client)
+
+    @unittest.skipIf(skip_llm_tests, skip_message)
+    @patch('tools.llm_api.AzureOpenAI')
+    def test_create_azure_client(self, mock_azure):
+        mock_azure.return_value = self.mock_azure_client
+        client = create_llm_client("azure")
+        mock_azure.assert_called_once_with(
+            api_key='test-azure-key',
+            api_version="2024-02-15-preview",
+            azure_endpoint="https://msopenai.openai.azure.com"
+        )
+        self.assertEqual(client, self.mock_azure_client)
 
     @unittest.skipIf(skip_llm_tests, skip_message)
     @patch('tools.llm_api.OpenAI')
@@ -182,6 +206,18 @@ class TestLLMAPI(unittest.TestCase):
         self.assertEqual(response, "Test OpenAI response")
         self.mock_openai_client.chat.completions.create.assert_called_once_with(
             model="gpt-4o",
+            messages=[{"role": "user", "content": "Test prompt"}],
+            temperature=0.7
+        )
+
+    @unittest.skipIf(skip_llm_tests, skip_message)
+    @patch('tools.llm_api.create_llm_client')
+    def test_query_azure(self, mock_create_client):
+        mock_create_client.return_value = self.mock_azure_client
+        response = query_llm("Test prompt", provider="azure")
+        self.assertEqual(response, "Test Azure OpenAI response")
+        self.mock_azure_client.chat.completions.create.assert_called_once_with(
+            model=os.getenv('AZURE_OPENAI_MODEL_DEPLOYMENT', 'gpt-4o-ms'),
             messages=[{"role": "user", "content": "Test prompt"}],
             temperature=0.7
         )

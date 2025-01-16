@@ -22,6 +22,7 @@ venv/bin/python ./tools/llm_api.py --prompt "What is the capital of France?" --p
 
 The LLM API supports multiple providers:
 - OpenAI (default, model: gpt-4o)
+- Azure OpenAI (model: configured via AZURE_OPENAI_MODEL_DEPLOYMENT in .env file, defaults to gpt-4o-ms)
 - DeepSeek (model: deepseek-chat)
 - Anthropic (model: claude-3-sonnet-20240229)
 - Gemini (model: gemini-pro)

@@ -1,7 +1,7 @@
 #!/usr/bin/env /workspace/tmp_windsurf/venv/bin/python3
 
 import google.generativeai as genai
-from openai import OpenAI
+from openai import OpenAI, AzureOpenAI
 from anthropic import Anthropic
 import argparse
 import os
@@ -51,6 +51,15 @@ def create_llm_client(provider="openai"):
         return OpenAI(
             api_key=api_key
         )
+    elif provider == "azure":
+        api_key = os.getenv('AZURE_OPENAI_API_KEY')
+        if not api_key:
+            raise ValueError("AZURE_OPENAI_API_KEY not found in environment variables")
+        return AzureOpenAI(
+            api_key=api_key,
+            api_version="2024-02-15-preview",
+            azure_endpoint="https://msopenai.openai.azure.com"
+        )
     elif provider == "deepseek":
         api_key = os.getenv('DEEPSEEK_API_KEY')
         if not api_key:
@@ -89,6 +98,8 @@ def query_llm(prompt, client=None, model=None, provider="openai"):
         if model is None:
             if provider == "openai":
                 model = "gpt-4o"
+            elif provider == "azure":
+                model = os.getenv('AZURE_OPENAI_MODEL_DEPLOYMENT', 'gpt-4o-ms')  # Get from env with fallback
             elif provider == "deepseek":
                 model = "deepseek-chat"
             elif provider == "anthropic":
@@ -98,7 +109,7 @@ def query_llm(prompt, client=None, model=None, provider="openai"):
             elif provider == "local":
                 model = "Qwen/Qwen2.5-32B-Instruct-AWQ"
             
-        if provider == "openai" or provider == "local" or provider == "deepseek":
+        if provider in ["openai", "local", "deepseek", "azure"]:
             response = client.chat.completions.create(
                 model=model,
                 messages=[
@@ -127,7 +138,7 @@ def query_llm(prompt, client=None, model=None, provider="openai"):
 def main():
     parser = argparse.ArgumentParser(description='Query an LLM with a prompt')
     parser.add_argument('--prompt', type=str, help='The prompt to send to the LLM', required=True)
-    parser.add_argument('--provider', choices=['openai','anthropic','gemini','local','deepseek'], default='openai', help='The API provider to use')
+    parser.add_argument('--provider', choices=['openai','anthropic','gemini','local','deepseek','azure'], default='openai', help='The API provider to use')
     parser.add_argument('--model', type=str, help='The model to use (default depends on provider)')
     args = parser.parse_args()
 
@@ -140,6 +151,8 @@ def main():
             args.model = "claude-3-5-sonnet-20241022"
         elif args.provider == 'gemini':
             args.model = "gemini-2.0-flash-exp"
+        elif args.provider == 'azure':
+            args.model = os.getenv('AZURE_OPENAI_MODEL_DEPLOYMENT', 'gpt-4o-ms')  # Get from env with fallback
 
     client = create_llm_client(args.provider)
     response = query_llm(args.prompt, client, model=args.model, provider=args.provider)
