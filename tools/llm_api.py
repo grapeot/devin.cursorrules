@@ -110,13 +110,19 @@ def query_llm(prompt, client=None, model=None, provider="openai"):
                 model = "Qwen/Qwen2.5-32B-Instruct-AWQ"
             
         if provider in ["openai", "local", "deepseek", "azure"]:
-            response = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-            )
+            kwargs = {
+                "model": model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.7,
+            }
+            
+            # Add o1-specific parameters
+            if model == "o1":
+                kwargs["response_format"] = {"type": "text"}
+                kwargs["reasoning_effort"] = "low"
+                del kwargs["temperature"]
+            
+            response = client.chat.completions.create(**kwargs)
             return response.choices[0].message.content
         elif provider == "anthropic":
             response = client.messages.create(

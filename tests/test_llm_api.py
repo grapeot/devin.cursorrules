@@ -281,6 +281,19 @@ class TestLLMAPI(unittest.TestCase):
 
     @unittest.skipIf(skip_llm_tests, skip_message)
     @patch('tools.llm_api.create_llm_client')
+    def test_query_o1_model(self, mock_create_client):
+        mock_create_client.return_value = self.mock_openai_client
+        response = query_llm("Test prompt", model="o1")
+        self.assertEqual(response, "Test OpenAI response")
+        self.mock_openai_client.chat.completions.create.assert_called_once_with(
+            model="o1",
+            messages=[{"role": "user", "content": "Test prompt"}],
+            response_format={"type": "text"},
+            reasoning_effort="low"
+        )
+
+    @unittest.skipIf(skip_llm_tests, skip_message)
+    @patch('tools.llm_api.create_llm_client')
     def test_query_with_existing_client(self, mock_create_client):
         response = query_llm("Test prompt", client=self.mock_openai_client)
         self.assertEqual(response, "Test OpenAI response")

@@ -6,7 +6,7 @@ html5lib>=1.1
 duckduckgo-search>=4.1.1
 
 # LLM integration
-openai>=1.12.0
+openai>=1.59.8 # o1 support
 anthropic>=0.42.0
 python-dotenv>=1.0.0
 
