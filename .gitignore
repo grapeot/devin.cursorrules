@@ -1,5 +1,11 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# commit message files
+commit_msg*.txt
+*_commit_msg.txt
+pr_msg*.txt
+*_pr_msg.txt
+
 # dependencies
 /node_modules
 /.pnp
