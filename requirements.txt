@@ -3,7 +3,7 @@ playwright>=1.41.0
 html5lib>=1.1
 
 # Search engine
-duckduckgo-search>=4.1.1
+duckduckgo-search>=7.2.1
 
 # LLM integration
 openai>=1.59.8 # o1 support

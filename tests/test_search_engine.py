@@ -24,9 +24,9 @@ class TestSearchEngine(unittest.TestCase):
         # Mock search results
         mock_results = [
             {
-                'link': 'http://example.com',
+                'href': 'http://example.com',
                 'title': 'Example Title',
-                'snippet': 'Example Snippet'
+                'body': 'Example Body'
             },
             {
                 'href': 'http://example2.com',
@@ -44,7 +44,7 @@ class TestSearchEngine(unittest.TestCase):
         search("test query", max_results=2)
 
         # Check debug output
-        expected_debug = "DEBUG: Attempt 1/3 - Searching for query: test query"
+        expected_debug = "DEBUG: Searching for query: test query (attempt 1/3)"
         self.assertIn(expected_debug, self.stderr.getvalue())
         self.assertIn("DEBUG: Found 2 results", self.stderr.getvalue())
 
@@ -53,7 +53,7 @@ class TestSearchEngine(unittest.TestCase):
         self.assertIn("=== Result 1 ===", output)
         self.assertIn("URL: http://example.com", output)
         self.assertIn("Title: Example Title", output)
-        self.assertIn("Snippet: Example Snippet", output)
+        self.assertIn("Snippet: Example Body", output)
         self.assertIn("=== Result 2 ===", output)
         self.assertIn("URL: http://example2.com", output)
         self.assertIn("Title: Example Title 2", output)
@@ -62,8 +62,7 @@ class TestSearchEngine(unittest.TestCase):
         # Verify mock was called correctly
         mock_ddgs_instance.__enter__.return_value.text.assert_called_once_with(
             "test query",
-            max_results=2,
-            backend='api'
+            max_results=2
         )
 
     @patch('tools.search_engine.DDGS')
@@ -97,32 +96,23 @@ class TestSearchEngine(unittest.TestCase):
         self.assertIn("ERROR: Search failed: Test error", self.stderr.getvalue())
 
     def test_result_field_fallbacks(self):
-        # Test that the fallback fields work correctly
-        result = {
-            'link': 'http://example.com',
-            'title': 'Example Title',
-            'snippet': 'Example Snippet'
-        }
-        
-        # Test primary fields
-        self.assertEqual(result.get('link', result.get('href', 'N/A')), 'http://example.com')
-        self.assertEqual(result.get('title', 'N/A'), 'Example Title')
-        self.assertEqual(result.get('snippet', result.get('body', 'N/A')), 'Example Snippet')
-        
-        # Test fallback fields
+        # Test that the fields work correctly with N/A fallback
         result = {
             'href': 'http://example.com',
             'title': 'Example Title',
             'body': 'Example Body'
         }
-        self.assertEqual(result.get('link', result.get('href', 'N/A')), 'http://example.com')
-        self.assertEqual(result.get('snippet', result.get('body', 'N/A')), 'Example Body')
+        
+        # Test fields present
+        self.assertEqual(result.get('href', 'N/A'), 'http://example.com')
+        self.assertEqual(result.get('title', 'N/A'), 'Example Title')
+        self.assertEqual(result.get('body', 'N/A'), 'Example Body')
         
         # Test missing fields
         result = {}
-        self.assertEqual(result.get('link', result.get('href', 'N/A')), 'N/A')
+        self.assertEqual(result.get('href', 'N/A'), 'N/A')
         self.assertEqual(result.get('title', 'N/A'), 'N/A')
-        self.assertEqual(result.get('snippet', result.get('body', 'N/A')), 'N/A')
+        self.assertEqual(result.get('body', 'N/A'), 'N/A')
 
 if __name__ == '__main__':
     unittest.main()
