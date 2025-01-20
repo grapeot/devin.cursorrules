@@ -62,10 +62,13 @@ def query_llm(plan_content, user_prompt=None, file_content=None):
     client = create_llm_client()
     
     # Combine prompts
-    system_prompt = """You are an AI assistant helping with project planning and execution.
-Please analyze the provided project plan and status, then address the user's specific query or request."""
+    system_prompt = """"""
     
-    combined_prompt = f"""Project Plan and Status:
+    combined_prompt = f"""You are working on a multi-agent context. The executor is the one who actually does the work. And you are the planner. Now the executor is asking you for help. Please analyze the provided project plan and status, then address the executor's specific query or request.
+
+You need to think like a founder. Prioritize agility and don't over-engineer. Think deep. Try to foresee challenges and derisk earlier. If opportunity sizing or probing experiments can reduce risk with low cost, instruct the executor to do them.
+    
+Project Plan and Status:
 ======
 {plan_content}
 ======
@@ -129,7 +132,7 @@ def main():
         print('========================================================')
         print(response)
         print('========================================================')
-        print('Now please do the actual changes in the .cursorrules file. And then read the content of the file to decide what to do next.')
+        print('Now please do the actual changes in the .cursorrules file. And then switch to the executor role, and read the content of the file to decide what to do next.')
     else:
         print("Failed to get response from LLM")
         sys.exit(1)
