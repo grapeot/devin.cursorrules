@@ -12,6 +12,57 @@ Transform your $20 Cursor/Windsurf into a Devin-like experience in one minute! T
 2. For Cursor users: The `.cursorrules` file will be automatically loaded
 3. For Windsurf users: Use both `.windsurfrules` and `scratchpad.md` for similar functionality
 
+## Update: Multi-Agent Support (Experimental)
+
+This project includes experimental support for a multi-agent system that enhances Cursor's capabilities through a two-agent architecture:
+
+### Architecture
+
+- **Planner** (powered by OpenAI's o1 model): Handles high-level analysis, task breakdown, and strategic planning
+- **Executor** (powered by Claude): Implements specific tasks, runs tests, and handles implementation details
+
+[Actual .cursorrules file](https://github.com/grapeot/devin.cursorrules/blob/multi-agent/.cursorrules#L3)
+
+### Key Benefits
+
+1. **Enhanced Task Quality**
+   - Separation of strategic planning from execution details
+   - Better cross-checking and validation of solutions
+   - Iterative refinement through Planner-Executor communication
+
+2. **Improved Problem Solving**
+   - Planner can design comprehensive test strategies
+   - Executor provides detailed feedback and implementation insights
+   - Continuous communication loop for optimization
+
+### Real-World Example
+
+A real case study of the multi-agent system debugging the DuckDuckGo search functionality:
+
+1. **Initial Analysis**
+   - Planner designed a series of experiments to investigate intermittent search failures
+   - Executor implemented tests and collected detailed logs
+
+2. **Iterative Investigation**
+   - Planner analyzed results and guided investigation to the library's GitHub issues
+   - Identified a bug in version 6.4 that was fixed in 7.2
+
+3. **Solution Implementation**
+   - Planner directed version upgrade and designed comprehensive test cases
+   - Executor implemented changes and validated with diverse search scenarios
+   - Final documentation included learnings and cross-checking measures
+
+### Usage
+
+To use the multi-agent system:
+
+1. Switch to the `multi-agent` branch
+2. The system will automatically coordinate between Planner and Executor roles
+3. Planner uses `tools/plan_exec_llm.py` for high-level analysis
+4. Executor implements tasks and provides feedback through the scratchpad
+
+This experimental feature transforms the development experience from working with a single assistant to having both a strategic planner and a skilled implementer, significantly improving the depth and quality of task completion.
+
 ## Setup
 
 1. Create Python virtual environment:
