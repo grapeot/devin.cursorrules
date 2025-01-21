@@ -2,9 +2,9 @@ name: Unit Tests
 
 on:
   pull_request:
-    branches: [ master, main ]
+    branches: [ master, main, multi-agent ]
   push:
-    branches: [ master, main ]
+    branches: [ master, main, multi-agent ]
 
 jobs:
   test:
