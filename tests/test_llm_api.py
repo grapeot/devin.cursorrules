@@ -204,10 +204,10 @@ class TestLLMAPI(unittest.TestCase):
     @patch('tools.llm_api.create_llm_client')
     def test_query_deepseek(self, mock_create_client):
         mock_create_client.return_value = self.mock_openai_client
-        response = query_llm("Test prompt", provider="deepseek", model="gpt-4o")
+        response = query_llm("Test prompt", provider="deepseek", model="deepseek-chat")
         self.assertEqual(response, "Test OpenAI response")
         self.mock_openai_client.chat.completions.create.assert_called_once_with(
-            model="gpt-4o",
+            model="deepseek-chat",
             messages=[{"role": "user", "content": [{"type": "text", "text": "Test prompt"}]}],
             temperature=0.7
         )
