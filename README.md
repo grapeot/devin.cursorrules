@@ -100,6 +100,11 @@ python -m playwright install chromium
 - Search engine integration (DuckDuckGo)
 - LLM-powered text analysis
 - Process planning and self-reflection capabilities
+- Token and cost tracking for LLM API calls
+  - Supports OpenAI (o1, gpt-4o) and Anthropic (Claude-3.5) models
+  - Tracks token usage, costs, and thinking time
+  - Provides session-based tracking with detailed statistics
+  - Command-line interface for viewing usage statistics
 
 ## Testing
 

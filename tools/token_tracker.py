@@ -104,7 +104,7 @@ class TokenTracker:
     @staticmethod
     def calculate_openai_cost(prompt_tokens: int, completion_tokens: int, model: str) -> float:
         """Calculate OpenAI API cost based on model and token usage"""
-        # Only support o1 and gpt-4o models
+        # Only support o1, gpt-4o, and deepseek-chat models
         if model == "o1":
             # o1 pricing per 1M tokens
             INPUT_PRICE_PER_M = 15.0
@@ -113,8 +113,12 @@ class TokenTracker:
             # gpt-4o pricing per 1M tokens
             INPUT_PRICE_PER_M = 10.0
             OUTPUT_PRICE_PER_M = 30.0
+        elif model == "deepseek-chat":
+            # DeepSeek pricing per 1M tokens
+            INPUT_PRICE_PER_M = 0.2  # $0.20 per million input tokens
+            OUTPUT_PRICE_PER_M = 0.2  # $0.20 per million output tokens
         else:
-            raise ValueError(f"Unsupported OpenAI model for cost calculation: {model}. Only o1 and gpt-4o are supported.")
+            raise ValueError(f"Unsupported OpenAI model for cost calculation: {model}. Only o1, gpt-4o, and deepseek-chat are supported.")
         
         input_cost = (prompt_tokens / 1_000_000) * INPUT_PRICE_PER_M
         output_cost = (completion_tokens / 1_000_000) * OUTPUT_PRICE_PER_M
@@ -137,6 +141,10 @@ class TokenTracker:
     
     def track_request(self, response: APIResponse):
         """Track a new API request"""
+        # Only track costs for OpenAI and Anthropic
+        if response.provider.lower() not in ["openai", "anthropic"]:
+            return
+            
         request_data = {
             "timestamp": time.time(),
             "provider": response.provider,
