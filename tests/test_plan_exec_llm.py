@@ -14,6 +14,11 @@ from tools.plan_exec_llm import TokenUsage
 class TestPlanExecLLM(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures"""
+        # Save original environment
+        self.original_env = dict(os.environ)
+        # Set test environment variables
+        os.environ['OPENAI_API_KEY'] = 'test_key'
+        
         self.test_env_content = """
 OPENAI_API_KEY=test_key
 """
@@ -29,6 +34,10 @@ Test content
 
     def tearDown(self):
         """Clean up test fixtures"""
+        # Restore original environment
+        os.environ.clear()
+        os.environ.update(self.original_env)
+        
         # Remove temporary test files
         for file in ['.env.test', '.cursorrules.test']:
             if os.path.exists(file):
@@ -57,29 +66,34 @@ Test content
         content = read_file_content('nonexistent_file.txt')
         self.assertIsNone(content)
 
-    @patch.dict(os.environ, {'OPENAI_API_KEY': 'test_key'})
-    def test_create_llm_client(self):
-        """Test LLM client creation"""
-        client = create_llm_client()
-        self.assertIsNotNone(client)
-
     @patch('tools.plan_exec_llm.OpenAI')
-    def test_query_llm(self, mock_openai):
+    def test_create_llm_client(self, mock_openai):
+        """Test LLM client creation"""
+        mock_client = MagicMock()
+        mock_openai.return_value = mock_client
+        
+        client = create_llm_client()
+        self.assertEqual(client, mock_client)
+        mock_openai.assert_called_once_with(api_key='test_key')
+
+    @patch('tools.plan_exec_llm.create_llm_client')
+    def test_query_llm(self, mock_create_client):
         """Test LLM querying"""
         # Mock the OpenAI response
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
         mock_response.choices[0].message = MagicMock()
         mock_response.choices[0].message.content = "Test response"
-        mock_response.usage = TokenUsage(
-            prompt_tokens=10,
-            completion_tokens=5,
-            total_tokens=15,
-            reasoning_tokens=None
-        )
+        mock_response.usage = MagicMock()
+        mock_response.usage.prompt_tokens = 10
+        mock_response.usage.completion_tokens = 5
+        mock_response.usage.total_tokens = 15
+        mock_response.usage.completion_tokens_details = MagicMock()
+        mock_response.usage.completion_tokens_details.reasoning_tokens = None
+        
         mock_client = MagicMock()
         mock_client.chat.completions.create.return_value = mock_response
-        mock_openai.return_value = mock_client
+        mock_create_client.return_value = mock_client
 
         # Test with various combinations of parameters
         response = query_llm("Test plan", "Test prompt", "Test file content")
@@ -95,7 +109,7 @@ Test content
         mock_client.chat.completions.create.assert_called_with(
             model="o1",
             messages=[
-                {"role": "system", "content": unittest.mock.ANY},
+                {"role": "system", "content": ""},
                 {"role": "user", "content": unittest.mock.ANY}
             ],
             response_format={"type": "text"},
