@@ -11,6 +11,8 @@ import sys
 import base64
 from typing import Optional, Union, List
 import mimetypes
+import time
+from .token_tracker import TokenUsage, APIResponse, get_token_tracker
 
 def load_environment():
     """Load environment variables from .env files in order of precedence"""
@@ -138,11 +140,13 @@ def query_llm(prompt: str, client=None, model=None, provider="openai", image_pat
             elif provider == "deepseek":
                 model = "deepseek-chat"
             elif provider == "anthropic":
-                model = "claude-3-sonnet-20240229"
+                model = "claude-3-5-sonnet-20241022"
             elif provider == "gemini":
                 model = "gemini-pro"
             elif provider == "local":
                 model = "Qwen/Qwen2.5-32B-Instruct-AWQ"
+        
+        start_time = time.time()
         
         if provider in ["openai", "local", "deepseek", "azure"]:
             messages = [{"role": "user", "content": []}]
@@ -175,6 +179,34 @@ def query_llm(prompt: str, client=None, model=None, provider="openai", image_pat
                 del kwargs["temperature"]
             
             response = client.chat.completions.create(**kwargs)
+            thinking_time = time.time() - start_time
+            
+            # Track token usage
+            token_usage = TokenUsage(
+                prompt_tokens=response.usage.prompt_tokens,
+                completion_tokens=response.usage.completion_tokens,
+                total_tokens=response.usage.total_tokens,
+                reasoning_tokens=response.usage.completion_tokens_details.reasoning_tokens if hasattr(response.usage, 'completion_tokens_details') else None
+            )
+            
+            # Calculate cost
+            cost = get_token_tracker().calculate_openai_cost(
+                token_usage.prompt_tokens,
+                token_usage.completion_tokens,
+                model
+            )
+            
+            # Track the request
+            api_response = APIResponse(
+                content=response.choices[0].message.content,
+                token_usage=token_usage,
+                cost=cost,
+                thinking_time=thinking_time,
+                provider=provider,
+                model=model
+            )
+            get_token_tracker().track_request(api_response)
+            
             return response.choices[0].message.content
             
         elif provider == "anthropic":
@@ -203,6 +235,33 @@ def query_llm(prompt: str, client=None, model=None, provider="openai", image_pat
                 max_tokens=1000,
                 messages=messages
             )
+            thinking_time = time.time() - start_time
+            
+            # Track token usage
+            token_usage = TokenUsage(
+                prompt_tokens=response.usage.input_tokens,
+                completion_tokens=response.usage.output_tokens,
+                total_tokens=response.usage.input_tokens + response.usage.output_tokens
+            )
+            
+            # Calculate cost
+            cost = get_token_tracker().calculate_claude_cost(
+                token_usage.prompt_tokens,
+                token_usage.completion_tokens,
+                model
+            )
+            
+            # Track the request
+            api_response = APIResponse(
+                content=response.content[0].text,
+                token_usage=token_usage,
+                cost=cost,
+                thinking_time=thinking_time,
+                provider=provider,
+                model=model
+            )
+            get_token_tracker().track_request(api_response)
+            
             return response.content[0].text
             
         elif provider == "gemini":

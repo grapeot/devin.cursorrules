@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 import asyncio
 import pytest
 from tools.web_scraper import (
@@ -8,8 +8,6 @@ from tools.web_scraper import (
     fetch_page,
     process_urls
 )
-
-pytestmark = pytest.mark.asyncio
 
 class TestWebScraper(unittest.TestCase):
     @classmethod
@@ -87,23 +85,33 @@ class TestWebScraper(unittest.TestCase):
         result = parse_html(html)
         self.assertIn("Unclosed paragraph", result)
 
-    async def test_fetch_page(self):
-        """Test fetching a single page."""
-        with patch('aiohttp.ClientSession') as mock_session:
-            mock_session.return_value = self.mock_client_session
-            content = await fetch_page("http://example.com", self.mock_session)
-            self.assertEqual(content, "Test content")
-            self.mock_session.get.assert_called_once_with("http://example.com")
+@pytest.mark.asyncio
+class TestWebScraperAsync:
+    @pytest.fixture
+    def mock_session(self):
+        mock_response = AsyncMock()
+        mock_response.status = 200
+        mock_response.text = AsyncMock(return_value="Test content")
+        
+        mock_client_session = AsyncMock()
+        mock_client_session.get = AsyncMock(return_value=mock_response)
+        mock_client_session.__aenter__ = AsyncMock(return_value=mock_client_session)
+        mock_client_session.__aexit__ = AsyncMock(return_value=None)
+        return mock_client_session
 
-    async def test_process_urls(self):
+    async def test_fetch_page(self, mock_session):
+        """Test fetching a single page."""
+        content = await fetch_page("http://example.com", mock_session)
+        assert content == "Test content"
+        mock_session.get.assert_called_once_with("http://example.com")
+
+    async def test_process_urls(self, mock_session):
         """Test processing multiple URLs concurrently."""
-        with patch('aiohttp.ClientSession') as mock_session:
-            mock_session.return_value = self.mock_client_session
-            results = await process_urls(self.urls, max_concurrent=2)
-            self.assertEqual(len(results), 2)
-            self.assertEqual(results[0], "Test content")
-            self.assertEqual(results[1], "Test content")
-            self.assertEqual(self.mock_session.get.call_count, 2)
+        urls = ["http://example1.com", "http://example2.com"]
+        results = await process_urls(urls, max_concurrent=2, session=mock_session)
+        assert len(results) == 2
+        assert all(content == "Test content" for content in results)
+        assert mock_session.get.call_count == 2
 
 if __name__ == '__main__':
     unittest.main()

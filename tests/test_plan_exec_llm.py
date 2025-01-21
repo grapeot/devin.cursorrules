@@ -9,6 +9,7 @@ import sys
 # Add the parent directory to the Python path so we can import the module
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tools.plan_exec_llm import load_environment, read_plan_status, read_file_content, create_llm_client, query_llm
+from tools.plan_exec_llm import TokenUsage
 
 class TestPlanExecLLM(unittest.TestCase):
     def setUp(self):
@@ -67,7 +68,15 @@ Test content
         """Test LLM querying"""
         # Mock the OpenAI response
         mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content="Test response"))]
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message = MagicMock()
+        mock_response.choices[0].message.content = "Test response"
+        mock_response.usage = TokenUsage(
+            prompt_tokens=10,
+            completion_tokens=5,
+            total_tokens=15,
+            reasoning_tokens=None
+        )
         mock_client = MagicMock()
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.return_value = mock_client

@@ -6,6 +6,8 @@ from pathlib import Path
 from openai import OpenAI
 from dotenv import load_dotenv
 import sys
+import time
+from .token_tracker import TokenUsage, APIResponse, get_token_tracker
 
 STATUS_FILE = '.cursorrules'
 
@@ -92,6 +94,7 @@ We will do the actual changes in the .cursorrules file.
 """
 
     try:
+        start_time = time.time()
         response = client.chat.completions.create(
             model="o1",
             messages=[
@@ -101,6 +104,34 @@ We will do the actual changes in the .cursorrules file.
             response_format={"type": "text"},
             reasoning_effort="low"
         )
+        thinking_time = time.time() - start_time
+        
+        # Track token usage
+        token_usage = TokenUsage(
+            prompt_tokens=response.usage.prompt_tokens,
+            completion_tokens=response.usage.completion_tokens,
+            total_tokens=response.usage.total_tokens,
+            reasoning_tokens=response.usage.completion_tokens_details.reasoning_tokens if hasattr(response.usage, 'completion_tokens_details') else None
+        )
+        
+        # Calculate cost
+        cost = get_token_tracker().calculate_openai_cost(
+            token_usage.prompt_tokens,
+            token_usage.completion_tokens,
+            "o1"
+        )
+        
+        # Track the request
+        api_response = APIResponse(
+            content=response.choices[0].message.content,
+            token_usage=token_usage,
+            cost=cost,
+            thinking_time=thinking_time,
+            provider="openai",
+            model="o1"
+        )
+        get_token_tracker().track_request(api_response)
+        
         return response.choices[0].message.content
     except Exception as e:
         print(f"Error querying LLM: {e}", file=sys.stderr)

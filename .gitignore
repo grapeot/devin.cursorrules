@@ -59,3 +59,7 @@ credentials.json
 
 # vscode
 .vscode/
+
+# Token tracking logs
+token_logs/
+test_token_logs/

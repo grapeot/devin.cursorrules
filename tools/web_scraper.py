@@ -11,6 +11,7 @@ from multiprocessing import Pool
 import time
 from urllib.parse import urlparse
 import logging
+import aiohttp
 
 # Configure logging
 logging.basicConfig(
@@ -20,21 +21,37 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-async def fetch_page(url: str, context) -> Optional[str]:
+async def fetch_page(url: str, session: Optional[aiohttp.ClientSession] = None) -> Optional[str]:
     """Asynchronously fetch a webpage's content."""
-    page = await context.new_page()
-    try:
-        logger.info(f"Fetching {url}")
-        await page.goto(url)
-        await page.wait_for_load_state('networkidle')
-        content = await page.content()
-        logger.info(f"Successfully fetched {url}")
-        return content
-    except Exception as e:
-        logger.error(f"Error fetching {url}: {str(e)}")
-        return None
-    finally:
-        await page.close()
+    if session is None:
+        async with aiohttp.ClientSession() as session:
+            try:
+                logger.info(f"Fetching {url}")
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        content = await response.text()
+                        logger.info(f"Successfully fetched {url}")
+                        return content
+                    else:
+                        logger.error(f"Error fetching {url}: HTTP {response.status}")
+                        return None
+            except Exception as e:
+                logger.error(f"Error fetching {url}: {str(e)}")
+                return None
+    else:
+        try:
+            logger.info(f"Fetching {url}")
+            response = await session.get(url)
+            if response.status == 200:
+                content = await response.text()
+                logger.info(f"Successfully fetched {url}")
+                return content
+            else:
+                logger.error(f"Error fetching {url}: HTTP {response.status}")
+                return None
+        except Exception as e:
+            logger.error(f"Error fetching {url}: {str(e)}")
+            return None
 
 def parse_html(html_content: Optional[str]) -> str:
     """Parse HTML content and extract text with hyperlinks in markdown format."""
@@ -123,39 +140,24 @@ def parse_html(html_content: Optional[str]) -> str:
         logger.error(f"Error parsing HTML: {str(e)}")
         return ""
 
-async def process_urls(urls: List[str], max_concurrent: int = 5) -> List[str]:
+async def process_urls(urls: List[str], max_concurrent: int = 5, session: Optional[aiohttp.ClientSession] = None) -> List[str]:
     """Process multiple URLs concurrently."""
-    async with async_playwright() as p:
-        browser = await p.chromium.launch()
-        try:
-            # Create browser contexts
-            n_contexts = min(len(urls), max_concurrent)
-            contexts = [await browser.new_context() for _ in range(n_contexts)]
-            
-            # Create tasks for each URL
-            tasks = []
-            for i, url in enumerate(urls):
-                context = contexts[i % len(contexts)]
-                task = fetch_page(url, context)
-                tasks.append(task)
-            
-            # Gather results
+    if session is None:
+        async with aiohttp.ClientSession() as session:
+            tasks = [fetch_page(url, session) for url in urls]
             html_contents = await asyncio.gather(*tasks)
-            
-            # Parse HTML contents in parallel
-            with Pool() as pool:
-                results = pool.map(parse_html, html_contents)
-                
-            return results
-            
-        finally:
-            # Cleanup
-            for context in contexts:
-                await context.close()
-            await browser.close()
+    else:
+        tasks = [fetch_page(url, session) for url in urls]
+        html_contents = await asyncio.gather(*tasks)
+    
+    # Parse HTML contents in parallel
+    with Pool() as pool:
+        results = pool.map(parse_html, html_contents)
+    
+    return results
 
 def validate_url(url: str) -> bool:
-    """Validate if the given string is a valid URL."""
+    """Validate if a string is a valid URL."""
     try:
         result = urlparse(url)
         return all([result.scheme, result.netloc])
@@ -163,45 +165,25 @@ def validate_url(url: str) -> bool:
         return False
 
 def main():
-    parser = argparse.ArgumentParser(description='Fetch and extract text content from webpages.')
+    """Main function to process URLs from command line."""
+    parser = argparse.ArgumentParser(description='Fetch and process multiple URLs concurrently.')
     parser.add_argument('urls', nargs='+', help='URLs to process')
-    parser.add_argument('--max-concurrent', type=int, default=5,
-                       help='Maximum number of concurrent browser instances (default: 5)')
-    parser.add_argument('--debug', action='store_true',
-                       help='Enable debug logging')
-    
+    parser.add_argument('--max-concurrent', type=int, default=5, help='Maximum number of concurrent requests')
     args = parser.parse_args()
     
-    if args.debug:
-        logger.setLevel(logging.DEBUG)
-    
     # Validate URLs
-    valid_urls = []
-    for url in args.urls:
-        if validate_url(url):
-            valid_urls.append(url)
-        else:
-            logger.error(f"Invalid URL: {url}")
-    
+    valid_urls = [url for url in args.urls if validate_url(url)]
     if not valid_urls:
         logger.error("No valid URLs provided")
         sys.exit(1)
     
-    start_time = time.time()
-    try:
-        results = asyncio.run(process_urls(valid_urls, args.max_concurrent))
-        
-        # Print results to stdout
-        for url, text in zip(valid_urls, results):
-            print(f"\n=== Content from {url} ===")
-            print(text)
-            print("=" * 80)
-        
-        logger.info(f"Total processing time: {time.time() - start_time:.2f}s")
-        
-    except Exception as e:
-        logger.error(f"Error during execution: {str(e)}")
-        sys.exit(1)
+    # Process URLs
+    results = asyncio.run(process_urls(valid_urls, args.max_concurrent))
+    
+    # Print results
+    for url, content in zip(valid_urls, results):
+        print(f"\n=== Content from {url} ===\n")
+        print(content)
 
 if __name__ == '__main__':
     main() 
