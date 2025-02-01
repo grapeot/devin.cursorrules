@@ -2,9 +2,9 @@ name: Unit Tests
 
 on:
   pull_request:
-    branches: [ master, main ]
+    branches: [ master, multi-agent ]
   push:
-    branches: [ master, main ]
+    branches: [ master, multi-agent ]
 
 jobs:
   test:
@@ -34,4 +34,4 @@ jobs:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
       run: |
-        PYTHONPATH=. python -m unittest discover tests/
+        PYTHONPATH=. pytest tests/

@@ -5,6 +5,7 @@ import pytest
 from unittest.mock import patch, MagicMock, mock_open, AsyncMock
 from tools.screenshot_utils import take_screenshot_sync, take_screenshot
 from tools.llm_api import query_llm
+from tools.token_tracker import TokenUsage
 
 class TestScreenshotVerification:
     @pytest.fixture
@@ -84,7 +85,19 @@ class TestScreenshotVerification:
         # Mock the entire OpenAI client chain
         mock_openai = MagicMock()
         mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message = MagicMock()
         mock_response.choices[0].message.content = "The webpage has a blue background and the title is 'agentic.ai test page'"
+        
+        # Set up token usage with proper object-like attributes
+        mock_usage = MagicMock()
+        mock_usage.prompt_tokens = 10
+        mock_usage.completion_tokens = 5
+        mock_usage.total_tokens = 15
+        mock_usage.completion_tokens_details = MagicMock()
+        mock_usage.completion_tokens_details.reasoning_tokens = None
+        mock_response.usage = mock_usage
+        
         mock_openai.chat.completions.create.return_value = mock_response
         
         with patch('tools.llm_api.create_llm_client', return_value=mock_openai):
@@ -113,6 +126,13 @@ class TestScreenshotVerification:
         mock_content = MagicMock()
         mock_content.text = "The webpage has a blue background and the title is 'agentic.ai test page'"
         mock_response.content = [mock_content]
+        
+        # Set up token usage with proper object-like attributes
+        mock_usage = MagicMock()
+        mock_usage.input_tokens = 10
+        mock_usage.output_tokens = 5
+        mock_response.usage = mock_usage
+        
         mock_anthropic.messages.create.return_value = mock_response
         
         with patch('tools.llm_api.create_llm_client', return_value=mock_anthropic):

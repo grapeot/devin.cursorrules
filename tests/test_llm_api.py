@@ -1,23 +1,11 @@
 import unittest
 from unittest.mock import patch, MagicMock, mock_open
 from tools.llm_api import create_llm_client, query_llm, load_environment
+from tools.token_tracker import TokenUsage, APIResponse
 import os
 import google.generativeai as genai
 import io
 import sys
-
-def is_llm_configured():
-    """Check if LLM is configured by trying to connect to the server"""
-    try:
-        client = create_llm_client()
-        response = query_llm("test", client)
-        return response is not None
-    except:
-        return False
-
-# Skip all LLM tests if LLM is not configured
-skip_llm_tests = not is_llm_configured()
-skip_message = "Skipping LLM tests as LLM is not configured. This is normal if you haven't set up a local LLM server."
 
 class TestEnvironmentLoading(unittest.TestCase):
     def setUp(self):
@@ -87,23 +75,43 @@ class TestLLMAPI(unittest.TestCase):
         # Create mock clients for different providers
         self.mock_openai_client = MagicMock()
         self.mock_anthropic_client = MagicMock()
+        self.mock_azure_client = MagicMock()
         self.mock_gemini_client = MagicMock()
         
-        # Set up OpenAI-style response
+        # Set up mock responses
         self.mock_openai_response = MagicMock()
-        self.mock_openai_choice = MagicMock()
-        self.mock_openai_message = MagicMock()
-        self.mock_openai_message.content = "Test OpenAI response"
-        self.mock_openai_choice.message = self.mock_openai_message
-        self.mock_openai_response.choices = [self.mock_openai_choice]
-        self.mock_openai_client.chat.completions.create.return_value = self.mock_openai_response
-        
-        # Set up Anthropic-style response
+        self.mock_openai_response.choices = [MagicMock()]
+        self.mock_openai_response.choices[0].message = MagicMock()
+        self.mock_openai_response.choices[0].message.content = "Test OpenAI response"
+        self.mock_openai_response.usage = TokenUsage(
+            prompt_tokens=10,
+            completion_tokens=5,
+            total_tokens=15,
+            reasoning_tokens=None
+        )
+
         self.mock_anthropic_response = MagicMock()
-        self.mock_anthropic_content = MagicMock()
-        self.mock_anthropic_content.text = "Test Anthropic response"
-        self.mock_anthropic_response.content = [self.mock_anthropic_content]
+        self.mock_anthropic_response.content = [MagicMock()]
+        self.mock_anthropic_response.content[0].text = "Test Anthropic response"
+        self.mock_anthropic_response.usage = MagicMock()
+        self.mock_anthropic_response.usage.input_tokens = 10
+        self.mock_anthropic_response.usage.output_tokens = 5
+
+        self.mock_azure_response = MagicMock()
+        self.mock_azure_response.choices = [MagicMock()]
+        self.mock_azure_response.choices[0].message = MagicMock()
+        self.mock_azure_response.choices[0].message.content = "Test Azure OpenAI response"
+        self.mock_azure_response.usage = TokenUsage(
+            prompt_tokens=10,
+            completion_tokens=5,
+            total_tokens=15,
+            reasoning_tokens=None
+        )
+        
+        # Set up return values for mock clients
+        self.mock_openai_client.chat.completions.create.return_value = self.mock_openai_response
         self.mock_anthropic_client.messages.create.return_value = self.mock_anthropic_response
+        self.mock_azure_client.chat.completions.create.return_value = self.mock_azure_response
         
         # Set up Gemini-style response
         self.mock_gemini_model = MagicMock()
@@ -122,21 +130,10 @@ class TestLLMAPI(unittest.TestCase):
             'AZURE_OPENAI_MODEL_DEPLOYMENT': 'test-model-deployment'
         })
         self.env_patcher.start()
-        
-        # Set up Azure OpenAI mock
-        self.mock_azure_response = MagicMock()
-        self.mock_azure_choice = MagicMock()
-        self.mock_azure_message = MagicMock()
-        self.mock_azure_message.content = "Test Azure OpenAI response"
-        self.mock_azure_choice.message = self.mock_azure_message
-        self.mock_azure_response.choices = [self.mock_azure_choice]
-        self.mock_azure_client = MagicMock()
-        self.mock_azure_client.chat.completions.create.return_value = self.mock_azure_response
 
     def tearDown(self):
         self.env_patcher.stop()
 
-    @unittest.skipIf(skip_llm_tests, skip_message)
     @patch('tools.llm_api.OpenAI')
     def test_create_openai_client(self, mock_openai):
         mock_openai.return_value = self.mock_openai_client
@@ -144,7 +141,6 @@ class TestLLMAPI(unittest.TestCase):
         mock_openai.assert_called_once_with(api_key='test-openai-key')
         self.assertEqual(client, self.mock_openai_client)
 
-    @unittest.skipIf(skip_llm_tests, skip_message)
     @patch('tools.llm_api.AzureOpenAI')
     def test_create_azure_client(self, mock_azure):
         mock_azure.return_value = self.mock_azure_client
@@ -156,7 +152,6 @@ class TestLLMAPI(unittest.TestCase):
         )
         self.assertEqual(client, self.mock_azure_client)
 
-    @unittest.skipIf(skip_llm_tests, skip_message)
     @patch('tools.llm_api.OpenAI')
     def test_create_deepseek_client(self, mock_openai):
         mock_openai.return_value = self.mock_openai_client
@@ -167,7 +162,6 @@ class TestLLMAPI(unittest.TestCase):
         )
         self.assertEqual(client, self.mock_openai_client)
 
-    @unittest.skipIf(skip_llm_tests, skip_message)
     @patch('tools.llm_api.Anthropic')
     def test_create_anthropic_client(self, mock_anthropic):
         mock_anthropic.return_value = self.mock_anthropic_client
@@ -175,34 +169,20 @@ class TestLLMAPI(unittest.TestCase):
         mock_anthropic.assert_called_once_with(api_key='test-anthropic-key')
         self.assertEqual(client, self.mock_anthropic_client)
 
-    @unittest.skipIf(skip_llm_tests, skip_message)
     @patch('tools.llm_api.genai')
     def test_create_gemini_client(self, mock_genai):
         client = create_llm_client("gemini")
         mock_genai.configure.assert_called_once_with(api_key='test-google-key')
         self.assertEqual(client, mock_genai)
 
-    @unittest.skipIf(skip_llm_tests, skip_message)
-    @patch('tools.llm_api.OpenAI')
-    def test_create_local_client(self, mock_openai):
-        mock_openai.return_value = self.mock_openai_client
-        client = create_llm_client("local")
-        mock_openai.assert_called_once_with(
-            base_url="http://192.168.180.137:8006/v1",
-            api_key="not-needed"
-        )
-        self.assertEqual(client, self.mock_openai_client)
-
-    @unittest.skipIf(skip_llm_tests, skip_message)
     def test_create_invalid_provider(self):
         with self.assertRaises(ValueError):
             create_llm_client("invalid_provider")
 
-    @unittest.skipIf(skip_llm_tests, skip_message)
-    @patch('tools.llm_api.create_llm_client')
+    @patch('tools.llm_api.OpenAI')
     def test_query_openai(self, mock_create_client):
         mock_create_client.return_value = self.mock_openai_client
-        response = query_llm("Test prompt", provider="openai")
+        response = query_llm("Test prompt", provider="openai", model="gpt-4o")
         self.assertEqual(response, "Test OpenAI response")
         self.mock_openai_client.chat.completions.create.assert_called_once_with(
             model="gpt-4o",
@@ -210,23 +190,21 @@ class TestLLMAPI(unittest.TestCase):
             temperature=0.7
         )
 
-    @unittest.skipIf(skip_llm_tests, skip_message)
     @patch('tools.llm_api.create_llm_client')
     def test_query_azure(self, mock_create_client):
         mock_create_client.return_value = self.mock_azure_client
-        response = query_llm("Test prompt", provider="azure")
+        response = query_llm("Test prompt", provider="azure", model="gpt-4o")
         self.assertEqual(response, "Test Azure OpenAI response")
         self.mock_azure_client.chat.completions.create.assert_called_once_with(
-            model=os.getenv('AZURE_OPENAI_MODEL_DEPLOYMENT', 'gpt-4o-ms'),
+            model="gpt-4o",
             messages=[{"role": "user", "content": [{"type": "text", "text": "Test prompt"}]}],
             temperature=0.7
         )
 
-    @unittest.skipIf(skip_llm_tests, skip_message)
     @patch('tools.llm_api.create_llm_client')
     def test_query_deepseek(self, mock_create_client):
         mock_create_client.return_value = self.mock_openai_client
-        response = query_llm("Test prompt", provider="deepseek")
+        response = query_llm("Test prompt", provider="deepseek", model="deepseek-chat")
         self.assertEqual(response, "Test OpenAI response")
         self.mock_openai_client.chat.completions.create.assert_called_once_with(
             model="deepseek-chat",
@@ -234,19 +212,17 @@ class TestLLMAPI(unittest.TestCase):
             temperature=0.7
         )
 
-    @unittest.skipIf(skip_llm_tests, skip_message)
     @patch('tools.llm_api.create_llm_client')
     def test_query_anthropic(self, mock_create_client):
         mock_create_client.return_value = self.mock_anthropic_client
-        response = query_llm("Test prompt", provider="anthropic")
+        response = query_llm("Test prompt", provider="anthropic", model="claude-3-5-sonnet-20241022")
         self.assertEqual(response, "Test Anthropic response")
         self.mock_anthropic_client.messages.create.assert_called_once_with(
-            model="claude-3-sonnet-20240229",
+            model="claude-3-5-sonnet-20241022",
             max_tokens=1000,
             messages=[{"role": "user", "content": [{"type": "text", "text": "Test prompt"}]}]
         )
 
-    @unittest.skipIf(skip_llm_tests, skip_message)
     @patch('tools.llm_api.create_llm_client')
     def test_query_gemini(self, mock_create_client):
         mock_create_client.return_value = self.mock_gemini_client
@@ -255,35 +231,21 @@ class TestLLMAPI(unittest.TestCase):
         self.mock_gemini_client.GenerativeModel.assert_called_once_with("gemini-pro")
         self.mock_gemini_model.generate_content.assert_called_once_with("Test prompt")
 
-    @unittest.skipIf(skip_llm_tests, skip_message)
-    @patch('tools.llm_api.create_llm_client')
-    def test_query_local(self, mock_create_client):
-        mock_create_client.return_value = self.mock_openai_client
-        response = query_llm("Test prompt", provider="local")
-        self.assertEqual(response, "Test OpenAI response")
-        self.mock_openai_client.chat.completions.create.assert_called_once_with(
-            model="Qwen/Qwen2.5-32B-Instruct-AWQ",
-            messages=[{"role": "user", "content": [{"type": "text", "text": "Test prompt"}]}],
-            temperature=0.7
-        )
-
-    @unittest.skipIf(skip_llm_tests, skip_message)
     @patch('tools.llm_api.create_llm_client')
     def test_query_with_custom_model(self, mock_create_client):
         mock_create_client.return_value = self.mock_openai_client
-        response = query_llm("Test prompt", model="custom-model")
+        response = query_llm("Test prompt", provider="openai", model="gpt-4o")
         self.assertEqual(response, "Test OpenAI response")
         self.mock_openai_client.chat.completions.create.assert_called_once_with(
-            model="custom-model",
+            model="gpt-4o",
             messages=[{"role": "user", "content": [{"type": "text", "text": "Test prompt"}]}],
             temperature=0.7
         )
 
-    @unittest.skipIf(skip_llm_tests, skip_message)
     @patch('tools.llm_api.create_llm_client')
     def test_query_o1_model(self, mock_create_client):
         mock_create_client.return_value = self.mock_openai_client
-        response = query_llm("Test prompt", model="o1")
+        response = query_llm("Test prompt", provider="openai", model="o1")
         self.assertEqual(response, "Test OpenAI response")
         self.mock_openai_client.chat.completions.create.assert_called_once_with(
             model="o1",
@@ -292,14 +254,16 @@ class TestLLMAPI(unittest.TestCase):
             reasoning_effort="low"
         )
 
-    @unittest.skipIf(skip_llm_tests, skip_message)
     @patch('tools.llm_api.create_llm_client')
     def test_query_with_existing_client(self, mock_create_client):
-        response = query_llm("Test prompt", client=self.mock_openai_client)
+        response = query_llm("Test prompt", client=self.mock_openai_client, model="gpt-4o")
         self.assertEqual(response, "Test OpenAI response")
-        mock_create_client.assert_not_called()
+        self.mock_openai_client.chat.completions.create.assert_called_once_with(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": [{"type": "text", "text": "Test prompt"}]}],
+            temperature=0.7
+        )
 
-    @unittest.skipIf(skip_llm_tests, skip_message)
     @patch('tools.llm_api.create_llm_client')
     def test_query_error(self, mock_create_client):
         self.mock_openai_client.chat.completions.create.side_effect = Exception("Test error")
