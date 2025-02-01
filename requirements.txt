@@ -21,17 +21,16 @@ google-generativeai
 # gRPC, for Google Generative AI preventing WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
 grpcio==1.60.1
 
-# Financial data and visualization
+# Data processing and visualization
 yfinance>=0.2.36
 pandas>=2.1.4
 matplotlib>=3.8.2
 seaborn>=0.13.1
 
-# UUID
-uuid
-
 # Tabulate for pretty-printing tables
 tabulate
 
-# Added from the code block
+# Utilities
 aiohttp==3.9.3
+requests>=2.28.0
+uuid

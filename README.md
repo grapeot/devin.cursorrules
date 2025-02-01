@@ -1,20 +1,20 @@
 # Transform your $20 Cursor into a Devin-like AI Assistant
 
-This repository gives you everything needed to supercharge your Cursor or Windsurf IDE with **advanced** agentic AI capabilities—similar to the $500/month Devin—but at a fraction of the cost. In under a minute, you’ll gain:
+This repository gives you everything needed to supercharge your Cursor or Windsurf IDE with **advanced** agentic AI capabilities — similar to the $500/month Devin—but at a fraction of the cost. In under a minute, you'll gain:
 
-* Automated planning and self-evolution, so your AI “thinks before it acts” and learns from mistakes
+* Automated planning and self-evolution, so your AI "thinks before it acts" and learns from mistakes
 * Extended tool usage, including web browsing, search engine queries, and LLM-driven text/image analysis
 * [Experimental] Multi-agent collaboration, with o1 doing the planning, and regular Claude/GPT-4o doing the execution.
 
 ## Why This Matters
 
-Devin impressed many by acting like an intern who writes its own plan, updates that plan as it progresses, and even evolves based on your feedback. But you don’t need Devin’s $500/month subscription to get most of that functionality. By customizing the .cursorrules file, plus a few Python scripts, you’ll unlock the same advanced features inside Cursor.
+Devin impressed many by acting like an intern who writes its own plan, updates that plan as it progresses, and even evolves based on your feedback. But you don't need Devin's $500/month subscription to get most of that functionality. By customizing the .cursorrules file, plus a few Python scripts, you'll unlock the same advanced features inside Cursor.
 
 ## Key Highlights
 
 1.	Easy Setup
    
-   Copy the provided config files into your project folder. Cursor users only need the .cursorrules file. It takes about a minute, and you’ll see the difference immediately.
+   Copy the provided config files into your project folder. Cursor users only need the .cursorrules file. It takes about a minute, and you'll see the difference immediately.
 
 2.	Planner-Executor Multi-Agent (Experimental)
 
@@ -32,7 +32,7 @@ Devin impressed many by acting like an intern who writes its own plan, updates t
 
 4.	Self-Evolution
 
-   Whenever you correct the AI, it can update its “lessons learned” in .cursorrules. Over time, it accumulates project-specific knowledge and gets smarter with each iteration. It makes AI a coachable and coach-worthy partner.
+   Whenever you correct the AI, it can update its "lessons learned" in .cursorrules. Over time, it accumulates project-specific knowledge and gets smarter with each iteration. It makes AI a coachable and coach-worthy partner.
 	
 ## Usage
 
@@ -138,8 +138,10 @@ The project includes comprehensive unit tests for all tools. To run the tests:
 source venv/bin/activate  # On Windows: .\venv\Scripts\activate
 
 # Run all tests
-PYTHONPATH=. python -m unittest discover tests/
+PYTHONPATH=. pytest -v tests/
 ```
+
+Note: Use `-v` flag to see detailed test output including why tests were skipped (e.g. missing API keys)
 
 The test suite includes:
 - Search engine tests (DuckDuckGo integration)
