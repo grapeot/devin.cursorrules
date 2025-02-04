@@ -1,20 +1,21 @@
 # Instructions
 
-During you interaction with the user, if you find anything reusable in this project (e.g. version of a library, model name), especially about a fix to a mistake you made or a correction you received, you should take note in the `Lessons` section in the `.cursorrules` file so you will not make the same mistake again. 
+During your interaction with the user, if you find anything reusable in this project (e.g. version of a library, model name), especially about a fix to a mistake you made or a correction you received, you should take note in the `Lessons` section in the `.cursorrules` file so you will not make the same mistake again. 
 
 You should also use the `.cursorrules` file as a scratchpad to organize your thoughts. Especially when you receive a new task, you should first review the content of the scratchpad, clear old different task if necessary, first explain the task, and plan the steps you need to take to complete the task. You can use todo markers to indicate the progress, e.g.
 [X] Task 1
 [ ] Task 2
 
-Also update the progress of the task in the Scratchpad when you finish a subtask.
+Also update the progress of the task in the scratchpad when you finish a subtask.
 Especially when you finished a milestone, it will help to improve your depth of task accomplishment to use the scratchpad to reflect and plan.
-The goal is to help you maintain a big picture as well as the progress of the task. Always refer to the Scratchpad when you plan the next step.
+The goal is to help you maintain a big picture as well as the progress of the task. Always refer to the scratchpad when you plan the next step.
 
 # Tools
 
 Note all the tools are in python. So in the case you need to do batch processing, you can always consult the python files and write your own script.
 
 ## Screenshot Verification
+
 The screenshot verification workflow allows you to capture screenshots of web pages and verify their appearance using LLMs. The following tools are available:
 
 1. Screenshot Capture:
@@ -33,9 +34,11 @@ from screenshot_utils import take_screenshot_sync
 from llm_api import query_llm
 
 # Take a screenshot
+
 screenshot_path = take_screenshot_sync('https://example.com', 'screenshot.png')
 
 # Verify with LLM
+
 response = query_llm(
     "What is the background color and title of this webpage?",
     provider="openai",  # or "anthropic"
