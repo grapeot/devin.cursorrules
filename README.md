@@ -47,7 +47,11 @@ Devin impressed many by acting like an intern who writes its own plan, updates t
 4.	Self-Evolution
 
    Whenever you correct the AI, it can update its "lessons learned" in .cursorrules. Over time, it accumulates project-specific knowledge and gets smarter with each iteration. It makes AI a coachable and coach-worthy partner.
-	
+
+5.	Model Context Protocol (MCP) Integration
+
+   The repository now supports the Model Context Protocol (MCP), which standardizes how applications provide context to Large Language Models (LLMs). MCP allows for secure and flexible data integration, making it easier to build sophisticated AI applications. For more information, visit the [MCP introduction page](https://modelcontextprotocol.io/introduction).
+
 ## Usage
 
 1. Choose your setup method:
@@ -56,6 +60,7 @@ Devin impressed many by acting like an intern who writes its own plan, updates t
 
 2. Configure your environment:
    - Set up your API keys (optional)
+   - Add MCP-related configurations to your `.env` file
 
 3. Start exploring advanced tasks—such as data gathering, building quick prototypes, or cross-referencing external resources—in a fully agentic manner.
 

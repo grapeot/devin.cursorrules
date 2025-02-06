@@ -86,6 +86,32 @@ Snippet: This is a snippet of the search result
 ```
 If needed, you can further use the `web_scraper.py` file to scrape the web page content.
 
+## MCP Integration
+
+The Model Context Protocol (MCP) standardizes how applications provide context to Large Language Models (LLMs). MCP allows for secure and flexible data integration, making it easier to build sophisticated AI applications. The following tools and instructions are available for MCP integration:
+
+1. MCP Configuration:
+   - Add MCP-related configurations to your `.env` file.
+   - Example configurations:
+     ```
+     MCP_SERVER_URL=http://your-mcp-server-url
+     MCP_API_KEY=your_mcp_api_key
+     ```
+
+2. MCP Server Usage:
+   - You can interact with MCP servers using the `tools/llm_api.py` file.
+   - Example usage:
+     ```python
+     from llm_api import create_llm_client, query_llm
+
+     # Create MCP client
+     client = create_llm_client(provider="mcp")
+
+     # Query MCP server
+     response = query_llm("Your prompt here", client=client)
+     print(response)
+     ```
+
 # Lessons
 
 ## User Specified Lessons

@@ -11,6 +11,7 @@ import sys
 import base64
 from typing import Optional, Union, List
 import mimetypes
+import requests
 
 def load_environment():
     """Load environment variables from .env files in order of precedence"""
@@ -108,6 +109,12 @@ def create_llm_client(provider="openai"):
             base_url="http://192.168.180.137:8006/v1",
             api_key="not-needed"
         )
+    elif provider == "mcp":
+        api_key = os.getenv('MCP_API_KEY')
+        server_url = os.getenv('MCP_SERVER_URL')
+        if not api_key or not server_url:
+            raise ValueError("MCP_API_KEY or MCP_SERVER_URL not found in environment variables")
+        return {"api_key": api_key, "server_url": server_url}
     else:
         raise ValueError(f"Unsupported provider: {provider}")
 
@@ -209,6 +216,19 @@ def query_llm(prompt: str, client=None, model=None, provider="openai", image_pat
             model = client.GenerativeModel(model)
             response = model.generate_content(prompt)
             return response.text
+
+        elif provider == "mcp":
+            headers = {
+                "Authorization": f"Bearer {client['api_key']}",
+                "Content-Type": "application/json"
+            }
+            data = {
+                "prompt": prompt,
+                "model": model
+            }
+            response = requests.post(client['server_url'], headers=headers, json=data)
+            response.raise_for_status()
+            return response.json().get("response")
             
     except Exception as e:
         print(f"Error querying LLM: {e}", file=sys.stderr)
@@ -217,7 +237,7 @@ def query_llm(prompt: str, client=None, model=None, provider="openai", image_pat
 def main():
     parser = argparse.ArgumentParser(description='Query an LLM with a prompt')
     parser.add_argument('--prompt', type=str, help='The prompt to send to the LLM', required=True)
-    parser.add_argument('--provider', choices=['openai','anthropic','gemini','local','deepseek','azure'], default='openai', help='The API provider to use')
+    parser.add_argument('--provider', choices=['openai','anthropic','gemini','local','deepseek','azure', 'mcp'], default='openai', help='The API provider to use')
     parser.add_argument('--model', type=str, help='The model to use (default depends on provider)')
     parser.add_argument('--image', type=str, help='Path to an image file to attach to the prompt')
     args = parser.parse_args()
