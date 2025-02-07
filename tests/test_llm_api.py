@@ -307,5 +307,26 @@ class TestLLMAPI(unittest.TestCase):
         response = query_llm("Test prompt")
         self.assertIsNone(response)
 
+    @unittest.skipIf(skip_llm_tests, skip_message)
+    @patch('tools.llm_api.create_llm_client')
+    def test_query_mcp_support(self, mock_create_client):
+        mock_create_client.return_value = self.mock_anthropic_client
+        response = query_llm("Test prompt with MCP", provider="anthropic", model="claude-3-mcp")
+        self.assertEqual(response, "Test Anthropic response")
+        self.mock_anthropic_client.messages.create.assert_called_once_with(
+            model="claude-3-mcp",
+            max_tokens=1000,
+            messages=[{"role": "user", "content": [{"type": "text", "text": "Test prompt with MCP"}]}]
+        )
+
+    @unittest.skipIf(skip_llm_tests, skip_message)
+    @patch('tools.llm_api.Anthropic')
+    def test_create_anthropic_client_with_mcp(self, mock_anthropic):
+        mock_anthropic.return_value = self.mock_anthropic_client
+        client = create_llm_client("anthropic")
+        mock_anthropic.assert_called_once_with(api_key='test-anthropic-key')
+        self.assertEqual(client, self.mock_anthropic_client)
+        # Additional checks for MCP-specific configurations can be added here
+
 if __name__ == '__main__':
     unittest.main()

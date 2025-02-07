@@ -59,6 +59,122 @@ Devin impressed many by acting like an intern who writes its own plan, updates t
 
 3. Start exploring advanced tasks—such as data gathering, building quick prototypes, or cross-referencing external resources—in a fully agentic manner.
 
+## Architecture
+
+### .cursorrules File
+
+The `.cursorrules` file is a crucial component of this architecture. It serves two main purposes:
+
+1. **Maintaining Reusable Project Information**: This includes details like library versions, model names, and any corrections or fixes that have been made. By keeping this information in one place, the AI can avoid repeating past mistakes and ensure consistency across the project.
+
+2. **Scratchpad for Task Planning**: The scratchpad section is used to organize thoughts and plan tasks. When a new task is received, the AI reviews the scratchpad, clears old tasks if necessary, explains the new task, and plans the steps needed to complete it. Progress is tracked using todo markers, and the scratchpad is updated as subtasks are completed.
+
+### Development Container
+
+The `.devcontainer/devcontainer.json` file sets up a development container with Python 3.10. This ensures a consistent development environment for all contributors.
+
+### Environment Variables
+
+Environment variables are managed through the `.env.example` file. This file includes placeholders for API keys and other configuration settings that are required for the project.
+
+### Unit Tests
+
+Unit tests are configured in the `.github/workflows/tests.yml` file. These tests run on pull requests and pushes to the main branches, ensuring that the codebase remains stable and functional.
+
+### Tools
+
+The project includes several tools that extend its capabilities:
+
+1. **Screenshot Verification Workflow**: This workflow allows you to capture screenshots of web pages and verify their appearance using LLMs. The following tools are available:
+
+   - Screenshot Capture:
+     ```bash
+     venv/bin/python tools/screenshot_utils.py URL [--output OUTPUT] [--width WIDTH] [--height HEIGHT]
+     ```
+
+   - LLM Verification with Images:
+     ```bash
+     venv/bin/python tools/llm_api.py --prompt "Your verification question" --provider {openai|anthropic} --image path/to/screenshot.png
+     ```
+
+   Example workflow:
+   ```python
+   from screenshot_utils import take_screenshot_sync
+   from llm_api import query_llm
+
+   # Take a screenshot
+   screenshot_path = take_screenshot_sync('https://example.com', 'screenshot.png')
+
+   # Verify with LLM
+   response = query_llm(
+       "What is the background color and title of this webpage?",
+       provider="openai",  # or "anthropic"
+       image_path=screenshot_path
+   )
+   print(response)
+   ```
+
+2. **LLM Integration**: The project includes functions for querying various LLM providers. For simple tasks, you can invoke the LLM by running the following command:
+   ```bash
+   venv/bin/python ./tools/llm_api.py --prompt "What is the capital of France?" --provider "anthropic"
+   ```
+
+   The LLM API supports multiple providers:
+   - OpenAI (default, model: gpt-4o)
+   - Azure OpenAI (model: configured via AZURE_OPENAI_MODEL_DEPLOYMENT in .env file, defaults to gpt-4o-ms)
+   - DeepSeek (model: deepseek-chat)
+   - Anthropic (model: claude-3-sonnet-20240229)
+   - Gemini (model: gemini-pro)
+   - Local LLM (model: Qwen/Qwen2.5-32B-Instruct-AWQ)
+
+   Example usage:
+   ```python
+   from llm_api import query_llm
+
+   response = query_llm("What is the capital of France?", provider="anthropic")
+   print(response)
+   ```
+
+3. **Web Browser**: You can use the `tools/web_scraper.py` file to scrape the web.
+   ```bash
+   venv/bin/python ./tools/web_scraper.py --max-concurrent 3 URL1 URL2 URL3
+   ```
+   This will output the content of the web pages.
+
+   Example usage:
+   ```python
+   from web_scraper import process_urls
+
+   urls = ["https://example.com", "https://example.org"]
+   results = process_urls(urls)
+   for result in results:
+       print(result)
+   ```
+
+4. **Search Engine**: You can use the `tools/search_engine.py` file to search the web.
+   ```bash
+   venv/bin/python ./tools/search_engine.py "your search keywords"
+   ```
+   This will output the search results in the following format:
+   ```
+   URL: https://example.com
+   Title: This is the title of the search result
+   Snippet: This is a snippet of the search result
+   ```
+
+   Example usage:
+   ```python
+   from search_engine import search
+
+   results = search("your search keywords")
+   for result in results:
+       print(result)
+   ```
+
+### MCP Support from Claude's Model Context Protocol
+
+The project also includes support for MCP (Model Context Protocol) from Claude's model context protocol. This allows for more advanced interactions and configurations with the LLMs, enhancing the overall capabilities of the project.
+
 ## Want the Details?
 
 Check out our [blog post](https://yage.ai/cursor-to-devin-en.html) on how we turned $20 into $500-level AI capabilities in just one hour. It explains the philosophy behind process planning, self-evolution, and fully automated workflows. You'll also find side-by-side comparisons of Devin, Cursor, and Windsurf, plus a step-by-step tutorial on setting this all up from scratch.
