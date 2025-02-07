@@ -55,8 +55,8 @@ Devin impressed many by acting like an intern who writes its own plan, updates t
    - **Manual**: Copy the files you need from this repository
 
 2. Configure your environment:
-   - Copy `.env.example` to `.env` if needed
-   - Add your API keys (optional)
+   - Cookiecutter users: Your API key is automatically added to `.env`
+   - Manual setup: Edit `.env` to set up your API keys
 
 3. Start exploring advanced tasks—such as data gathering, building quick prototypes, or cross-referencing external resources—in a fully agentic manner.
 

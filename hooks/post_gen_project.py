@@ -4,20 +4,44 @@ import platform
 
 def setup_env_file():
     """Set up the .env file with API key if provided"""
-    llm_api_key = '{{ cookiecutter.llm_api_key.default }}'  # Access the default value
+    llm_provider = '{{ cookiecutter.llm_provider }}'
     
-    # Add API key if provided
-    if llm_api_key:
-        with open('.env', 'a') as f:  # Append mode
-            f.write(f'\nLLM_API_KEY={llm_api_key}\n')
+    # If provider != 'None', retrieve whatever was saved in pre_gen_project.py
+    if llm_provider != 'None':
+        if os.path.exists(".temp_api_key"):
+            with open(".temp_api_key", "r") as f:
+                llm_api_key = f.read().strip()
+            os.remove(".temp_api_key")
+
+            if llm_api_key:
+                provider_env_vars = {
+                    'OpenAI': 'OPENAI_API_KEY',
+                    'Anthropic': 'ANTHROPIC_API_KEY',
+                    'DeepSeek': 'DEEPSEEK_API_KEY',
+                    'Google': 'GOOGLE_API_KEY',
+                    'Azure OpenAI': 'AZURE_OPENAI_API_KEY'
+                }
+                env_var_name = provider_env_vars.get(llm_provider)
+                if env_var_name:
+                    # Update .env or create it if needed
+                    if not os.path.exists('.env'):
+                        with open('.env', 'w') as _:
+                            pass
+                    with open('.env', 'r') as f:
+                        lines = f.readlines()
+                    with open('.env', 'w') as f:
+                        key_found = False
+                        for line in lines:
+                            if line.startswith(env_var_name + '='):
+                                f.write(f'{env_var_name}={llm_api_key}\n')
+                                key_found = True
+                            else:
+                                f.write(line)
+                        if not key_found:
+                            f.write(f'{env_var_name}={llm_api_key}\n')
 
 def main():
-    print("\nInitial debug info:")
-    print(f"- Current working directory: {os.getcwd()}")
-    print(f"- Directory contents: {os.listdir('.')}")
-    
     # Set up environment file
-    print("\nSetting up .env file...")
     setup_env_file()
     
     # Create virtual environment

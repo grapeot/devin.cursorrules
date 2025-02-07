@@ -1,14 +1,12 @@
 {
     "project_name": "my-project",
     "project_type": ["cursor", "windsurf"],
-    "llm_api_key": {
-        "__prompt__": "Optional: Enter your LLM API key to enable advanced features like multi-modal analysis and future multi-agent capabilities (leave empty if not needed)",
-        "default": ""
-    },
+    "llm_provider": ["None", "OpenAI", "Anthropic", "DeepSeek", "Google", "Azure OpenAI"],
     "_copy_without_render": [
         "*.py",
         "*.md",
         ".cursorrules",
-        ".windsurfrules"
+        ".windsurfrules",
+        ".env"
     ]
 } 
