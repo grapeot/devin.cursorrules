@@ -2,25 +2,89 @@ import unittest
 from unittest.mock import patch, MagicMock
 import sys
 from io import StringIO
-from tools.search_engine import search
+from tools.search_engine import (
+    search,
+    SearchError,
+    get_search_engine,
+    DuckDuckGoEngine,
+    GoogleEngine,
+    fetch_page_snippet
+)
+from tools.common.errors import ValidationError
+import pytest
 
 class TestSearchEngine(unittest.TestCase):
     def setUp(self):
-        # Capture stdout and stderr for testing
-        self.stdout = StringIO()
-        self.stderr = StringIO()
-        self.old_stdout = sys.stdout
-        self.old_stderr = sys.stderr
-        sys.stdout = self.stdout
-        sys.stderr = self.stderr
+        self.mock_logger = MagicMock()
+        patch('tools.search_engine.logger', self.mock_logger).start()
 
     def tearDown(self):
-        # Restore stdout and stderr
-        sys.stdout = self.old_stdout
-        sys.stderr = self.old_stderr
+        patch.stopall()
+
+    @patch('tools.search_engine.requests.get')
+    def test_fetch_page_snippet(self, mock_get):
+        # Mock successful response
+        mock_response = MagicMock()
+        mock_response.text = '''
+            <html>
+                <head>
+                    <title>Test Title</title>
+                    <meta name="description" content="Meta description snippet">
+                </head>
+                <body>
+                    <p>First paragraph</p>
+                    <p>Second paragraph with enough text to be considered a valid snippet candidate that should be selected for the result</p>
+                </body>
+            </html>
+        '''
+        mock_get.return_value = mock_response
+        
+        # Test with meta description
+        title, snippet = fetch_page_snippet("http://example.com", "test query")
+        self.assertEqual(title, "Test Title")
+        self.assertEqual(snippet, "Meta description snippet")
+        
+        # Test without meta description
+        mock_response.text = '''
+            <html>
+                <head>
+                    <title>Test Title</title>
+                </head>
+                <body>
+                    <p>Short text</p>
+                    <p>Second paragraph with enough text to be considered a valid snippet candidate that should be selected for the result</p>
+                </body>
+            </html>
+        '''
+        title, snippet = fetch_page_snippet("http://example.com", "test query")
+        self.assertEqual(title, "Test Title")
+        self.assertTrue(snippet.startswith("Second paragraph"))
+        
+        # Test error handling
+        mock_get.side_effect = Exception("Connection error")
+        with self.assertRaises(SearchError) as cm:
+            fetch_page_snippet("http://example.com", "test query")
+        self.assertIn("Connection error", str(cm.exception))
+
+    def test_get_search_engine(self):
+        # Test valid engines
+        engine = get_search_engine("duckduckgo")
+        self.assertIsInstance(engine, DuckDuckGoEngine)
+        
+        engine = get_search_engine("google")
+        self.assertIsInstance(engine, GoogleEngine)
+        
+        # Test case insensitivity
+        engine = get_search_engine("DUCKDUCKGO")
+        self.assertIsInstance(engine, DuckDuckGoEngine)
+        
+        # Test invalid engine
+        with pytest.raises(ValidationError) as exc_info:
+            get_search_engine("invalid")
+        assert "Invalid search engine" in str(exc_info.value)
 
     @patch('tools.search_engine.DDGS')
-    def test_successful_search(self, mock_ddgs):
+    def test_duckduckgo_search(self, mock_ddgs):
         # Mock search results
         mock_results = [
             {
@@ -39,30 +103,120 @@ class TestSearchEngine(unittest.TestCase):
         mock_ddgs_instance = MagicMock()
         mock_ddgs_instance.__enter__.return_value.text.return_value = mock_results
         mock_ddgs.return_value = mock_ddgs_instance
+        
+        # Run search
+        results = search("test query", max_results=2, engine="duckduckgo")
+        
+        # Check logging
+        self.mock_logger.info.assert_any_call(
+            "Searching for: test query",
+            extra={
+                "context": {
+                    "engine": "duckduckgo",
+                    "max_results": 2,
+                    "max_retries": 3,
+                    "fetch_snippets": True
+                }
+            }
+        )
+        
+        # Check results
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0]["url"], "http://example.com")
+        self.assertEqual(results[0]["title"], "Example Title")
+        self.assertEqual(results[0]["snippet"], "Example Body")
+        
+    @patch('tools.search_engine.google_search')
+    @patch('tools.search_engine.fetch_page_snippet')
+    def test_google_search_with_snippets(self, mock_fetch_snippet, mock_google):
+        # Mock search results
+        mock_google.return_value = [
+            'http://example.com',
+            'http://example2.com'
+        ]
+        
+        # Mock snippet fetching
+        mock_fetch_snippet.side_effect = [
+            ("Example Title", "Example Snippet"),
+            ("Example Title 2", "Example Snippet 2")
+        ]
+        
+        # Run search with snippet fetching
+        results = search("test query", max_results=2, engine="google", fetch_snippets=True)
+        
+        # Check logging
+        self.mock_logger.info.assert_any_call(
+            "Searching for: test query",
+            extra={
+                "context": {
+                    "engine": "google",
+                    "max_results": 2,
+                    "max_retries": 3,
+                    "fetch_snippets": True
+                }
+            }
+        )
+        
+        # Check results
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0]["url"], "http://example.com")
+        self.assertEqual(results[0]["title"], "Example Title")
+        self.assertEqual(results[0]["snippet"], "Example Snippet")
+        
+    @patch('tools.search_engine.google_search')
+    @patch('tools.search_engine.fetch_page_snippet')
+    def test_google_search_without_snippets(self, mock_fetch_snippet, mock_google):
+        # Mock search results
+        mock_google.return_value = [
+            'http://example.com',
+            'http://example2.com'
+        ]
+
+        # Run search without snippet fetching
+        results = search("test query", max_results=2, engine="google", fetch_snippets=False)
+
+        # Check search results
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0]["url"], "http://example.com")
+        self.assertEqual(results[0]["title"], "http://example.com")
+        self.assertEqual(results[0]["snippet"], "")
+        self.assertEqual(results[1]["url"], "http://example2.com")
+        self.assertEqual(results[1]["title"], "http://example2.com")
+        self.assertEqual(results[1]["snippet"], "")
+
+        # Verify fetch_snippet was not called
+        mock_fetch_snippet.assert_not_called()
+
+    @patch('tools.search_engine.google_search')
+    @patch('tools.search_engine.fetch_page_snippet')
+    def test_google_search_with_failed_snippets(self, mock_fetch_snippet, mock_google):
+        # Mock search results
+        mock_google.return_value = [
+            'http://example.com',
+            'http://example2.com'
+        ]
+        
+        # Mock snippet fetching with failures
+        mock_fetch_snippet.side_effect = [
+            ("Example Title", "Example Snippet"),
+            SearchError("Failed to fetch", "google", "test query")
+        ]
 
         # Run search
-        search("test query", max_results=2)
+        results = search("test query", max_results=2, engine="google")
 
-        # Check debug output
-        expected_debug = "DEBUG: Searching for query: test query (attempt 1/3)"
-        self.assertIn(expected_debug, self.stderr.getvalue())
-        self.assertIn("DEBUG: Found 2 results", self.stderr.getvalue())
+        # Check results - should include both successful and failed snippets
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0]["url"], "http://example.com")
+        self.assertEqual(results[0]["title"], "Example Title")
+        self.assertEqual(results[0]["snippet"], "Example Snippet")
+        self.assertEqual(results[1]["url"], "http://example2.com")
+        self.assertEqual(results[1]["title"], "http://example2.com")
+        self.assertEqual(results[1]["snippet"], "")
 
-        # Check search results output
-        output = self.stdout.getvalue()
-        self.assertIn("=== Result 1 ===", output)
-        self.assertIn("URL: http://example.com", output)
-        self.assertIn("Title: Example Title", output)
-        self.assertIn("Snippet: Example Body", output)
-        self.assertIn("=== Result 2 ===", output)
-        self.assertIn("URL: http://example2.com", output)
-        self.assertIn("Title: Example Title 2", output)
-        self.assertIn("Snippet: Example Body 2", output)
-
-        # Verify mock was called correctly
-        mock_ddgs_instance.__enter__.return_value.text.assert_called_once_with(
-            "test query",
-            max_results=2
+        # Verify warning was logged
+        self.mock_logger.warning.assert_called_with(
+            "Failed to fetch snippet for http://example2.com: Failed to fetch (query=test query, provider=google)"
         )
 
     @patch('tools.search_engine.DDGS')
@@ -71,15 +225,25 @@ class TestSearchEngine(unittest.TestCase):
         mock_ddgs_instance = MagicMock()
         mock_ddgs_instance.__enter__.return_value.text.return_value = []
         mock_ddgs.return_value = mock_ddgs_instance
-
+        
         # Run search
-        search("test query")
-
-        # Check debug output
-        self.assertIn("DEBUG: No results found", self.stderr.getvalue())
-
-        # Check that no results were printed
-        self.assertEqual("", self.stdout.getvalue().strip())
+        results = search("test query")
+        
+        # Check logging
+        self.mock_logger.info.assert_any_call(
+            "Searching for: test query",
+            extra={
+                "context": {
+                    "engine": "duckduckgo",
+                    "max_results": 10,
+                    "max_retries": 3,
+                    "fetch_snippets": True
+                }
+            }
+        )
+        
+        # Check results
+        self.assertEqual(len(results), 0)
 
     @patch('tools.search_engine.DDGS')
     def test_search_error(self, mock_ddgs):
@@ -89,30 +253,36 @@ class TestSearchEngine(unittest.TestCase):
         mock_ddgs.return_value = mock_ddgs_instance
 
         # Run search and check for error
-        with self.assertRaises(SystemExit) as cm:
+        with pytest.raises(SearchError) as exc_info:
             search("test query")
         
-        self.assertEqual(cm.exception.code, 1)
-        self.assertIn("ERROR: Search failed: Test error", self.stderr.getvalue())
+        assert "DuckDuckGo search failed" in str(exc_info.value)
+        assert "Test error" in str(exc_info.value)
 
-    def test_result_field_fallbacks(self):
-        # Test that the fields work correctly with N/A fallback
-        result = {
-            'href': 'http://example.com',
-            'title': 'Example Title',
-            'body': 'Example Body'
-        }
-        
-        # Test fields present
-        self.assertEqual(result.get('href', 'N/A'), 'http://example.com')
-        self.assertEqual(result.get('title', 'N/A'), 'Example Title')
-        self.assertEqual(result.get('body', 'N/A'), 'Example Body')
-        
-        # Test missing fields
-        result = {}
-        self.assertEqual(result.get('href', 'N/A'), 'N/A')
-        self.assertEqual(result.get('title', 'N/A'), 'N/A')
-        self.assertEqual(result.get('body', 'N/A'), 'N/A')
+    def test_invalid_inputs(self):
+        # Test empty query
+        with pytest.raises(ValidationError) as exc_info:
+            search("")
+        assert "Search query cannot be empty" in str(exc_info.value)
+
+        # Test whitespace query
+        with pytest.raises(ValidationError) as exc_info:
+            search("   ")
+        assert "Search query cannot be empty" in str(exc_info.value)
+
+        # Test invalid max_results
+        with pytest.raises(ValidationError) as exc_info:
+            search("test", max_results=0)
+        assert "max_results must be a positive integer" in str(exc_info.value)
+
+        with pytest.raises(ValidationError) as exc_info:
+            search("test", max_results=101)
+        assert "max_results cannot exceed 100" in str(exc_info.value)
+
+        # Test invalid engine
+        with pytest.raises(ValidationError) as exc_info:
+            search("test", engine="invalid")
+        assert "Invalid search engine" in str(exc_info.value)
 
 if __name__ == '__main__':
     unittest.main()
