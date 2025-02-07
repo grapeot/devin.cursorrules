@@ -1,13 +1,13 @@
 # Instructions
 
-During you interaction with the user, if you find anything reusable in this project (e.g. version of a library, model name), especially about a fix to a mistake you made or a correction you received, you should take note in the `Lessons` section in the `.cursorrules` file so you will not make the same mistake again. 
+During your interaction with the user, if you find anything reusable in this project (e.g. version of a library, model name), especially about a fix to a mistake you made or a correction you received, you should take note in the `Lessons` section in the `.cursorrules` file so you will not make the same mistake again. 
 
-You should also use the `.cursorrules` file as a scratchpad to organize your thoughts. Especially when you receive a new task, you should first review the content of the scratchpad, clear old different task if necessary, first explain the task, and plan the steps you need to take to complete the task. You can use todo markers to indicate the progress, e.g.
+You should also use the `.cursorrules` file as a Scratchpad to organize your thoughts. Especially when you receive a new task, you should first review the content of the Scratchpad, clear old different task if necessary, first explain the task, and plan the steps you need to take to complete the task. You can use todo markers to indicate the progress, e.g.
 [X] Task 1
 [ ] Task 2
 
 Also update the progress of the task in the Scratchpad when you finish a subtask.
-Especially when you finished a milestone, it will help to improve your depth of task accomplishment to use the scratchpad to reflect and plan.
+Especially when you finished a milestone, it will help to improve your depth of task accomplishment to use the Scratchpad to reflect and plan.
 The goal is to help you maintain a big picture as well as the progress of the task. Always refer to the Scratchpad when you plan the next step.
 
 # Tools
@@ -15,6 +15,7 @@ The goal is to help you maintain a big picture as well as the progress of the ta
 Note all the tools are in python. So in the case you need to do batch processing, you can always consult the python files and write your own script.
 
 ## Screenshot Verification
+
 The screenshot verification workflow allows you to capture screenshots of web pages and verify their appearance using LLMs. The following tools are available:
 
 1. Screenshot Capture:
@@ -33,9 +34,11 @@ from screenshot_utils import take_screenshot_sync
 from llm_api import query_llm
 
 # Take a screenshot
+
 screenshot_path = take_screenshot_sync('https://example.com', 'screenshot.png')
 
 # Verify with LLM
+
 response = query_llm(
     "What is the background color and title of this webpage?",
     provider="openai",  # or "anthropic"
@@ -100,42 +103,3 @@ If needed, you can further use the `web_scraper.py` file to scrape the web page 
 - Use 'gpt-4o' as the model name for OpenAI's GPT-4 with vision capabilities
 
 # Scratchpad
-
-## Current Task: Convert Project to Cookiecutter Template
-
-任务说明：将当前项目转换为一个 cookiecutter 模板，支持用户选择创建 cursor 或 windsurf 项目，并进行相应的配置。
-
-主要步骤：
-[ ] 1. 创建 cookiecutter.json 配置文件
-    - project_type 选择（cursor/windsurf）
-    - project_name
-    - llm_api_key（可选）
-[ ] 2. 设置项目模板结构
-    - 根据 project_type 复制对应的规则文件
-    - 使用 symbolic link 链接共享的工具和依赖
-    - 移除 tests 目录
-    - 移除 README.md（由模板生成）
-[ ] 3. 创建 hooks 脚本
-    - pre_gen_project：验证输入
-    - post_gen_project：
-        - 设置虚拟环境
-        - 处理 symbolic links
-[ ] 4. 编写说明文档
-    - 生成项目特定的 README.md
-    - API key 说明文档
-
-差异分析：
-1. Cursor vs Windsurf 主要区别：
-   - Cursor: 使用 .cursorrules，支持更多高级功能（如截图验证）
-   - Windsurf: 使用 .windsurfrules 和 scratchpad.md，功能相对基础
-
-2. API Key 设计：
-   - 完全可选
-   - 基础功能无需 API key
-   - 提供 API key 后解锁多模态分析等高级功能
-
-3. 共享资源处理：
-   - tools/ 目录使用 symbolic link 指向中心位置
-   - requirements.txt 也使用 symbolic link
-   - 好处：维护方便，一处修改全局生效
-   - 注意：需要在 post_gen_project 中正确处理跨平台兼容性
