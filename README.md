@@ -143,6 +143,18 @@ PYTHONPATH=. pytest -v tests/
 
 Note: Use `-v` flag to see detailed test output including why tests were skipped (e.g. missing API keys)
 
+To run tests with coverage analysis:
+```bash
+# Run tests with coverage
+PYTHONPATH=. pytest --cov=tools tests/
+
+# Generate HTML coverage report
+PYTHONPATH=. pytest --cov=tools --cov-report=html tests/
+
+# The HTML report will be available in the htmlcov/ directory
+# Open htmlcov/index.html in your browser to view the detailed coverage report
+```
+
 The test suite includes:
 - Search engine tests (DuckDuckGo integration)
 - Web scraper tests (Playwright-based scraping)
