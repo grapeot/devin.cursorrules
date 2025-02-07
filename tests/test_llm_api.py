@@ -1,11 +1,34 @@
 import unittest
+import pytest
 from unittest.mock import patch, MagicMock, mock_open
-from tools.llm_api import create_llm_client, query_llm, load_environment
+from tools.llm_api import (
+    create_llm_client,
+    query_llm,
+    load_environment,
+    LLMApiError,
+    encode_image_file,
+    get_default_model,
+    read_content_or_file
+)
 from tools.token_tracker import TokenUsage, APIResponse
 import os
 import google.generativeai as genai
 import io
 import sys
+import base64
+import mimetypes
+import tempfile
+from tools.common.errors import FileError, APIError
+
+class AsyncContextManagerMock:
+    def __init__(self, response):
+        self.response = response
+    
+    async def __aenter__(self):
+        return self.response
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        pass
 
 class TestEnvironmentLoading(unittest.TestCase):
     def setUp(self):
@@ -176,8 +199,9 @@ class TestLLMAPI(unittest.TestCase):
         self.assertEqual(client, mock_genai)
 
     def test_create_invalid_provider(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(LLMApiError) as cm:
             create_llm_client("invalid_provider")
+        self.assertIn("Unsupported provider: invalid_provider", str(cm.exception))
 
     @patch('tools.llm_api.OpenAI')
     def test_query_openai(self, mock_create_client):
@@ -268,8 +292,159 @@ class TestLLMAPI(unittest.TestCase):
     def test_query_error(self, mock_create_client):
         self.mock_openai_client.chat.completions.create.side_effect = Exception("Test error")
         mock_create_client.return_value = self.mock_openai_client
-        response = query_llm("Test prompt")
-        self.assertIsNone(response)
+        with self.assertRaises(LLMApiError) as cm:
+            query_llm("Test prompt")
+        self.assertIn("Failed to query openai LLM: Test error", str(cm.exception))
+
+    def test_encode_image_file(self):
+        """Test image file encoding"""
+        # Create a test image file
+        test_image = b'fake image data'
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as f:
+            f.write(test_image)
+            test_file = f.name
+        
+        try:
+            # Test PNG image
+            with patch('mimetypes.guess_type', return_value=('image/png', None)):
+                base64_data, mime_type = encode_image_file(test_file)
+                self.assertEqual(mime_type, 'image/png')
+                self.assertEqual(base64.b64decode(base64_data), test_image)
+            
+            # Test JPEG image
+            with patch('mimetypes.guess_type', return_value=('image/jpeg', None)):
+                base64_data, mime_type = encode_image_file(test_file)
+                self.assertEqual(mime_type, 'image/jpeg')
+                self.assertEqual(base64.b64decode(base64_data), test_image)
+            
+            # Test unknown type defaulting to PNG
+            with patch('mimetypes.guess_type', return_value=(None, None)):
+                base64_data, mime_type = encode_image_file(test_file)
+                self.assertEqual(mime_type, 'image/png')
+                self.assertEqual(base64.b64decode(base64_data), test_image)
+        finally:
+            os.unlink(test_file)
+
+    def test_get_default_model(self):
+        """Test default model selection"""
+        # Test OpenAI default
+        self.assertEqual(get_default_model("openai"), "gpt-4o")
+        
+        # Test Azure default
+        self.assertEqual(get_default_model("azure"), "test-model-deployment")
+        
+        # Test Anthropic default
+        self.assertEqual(get_default_model("anthropic"), "claude-3-sonnet-20240229")
+        
+        # Test Gemini default
+        self.assertEqual(get_default_model("gemini"), "gemini-pro")
+        
+        # Test Deepseek default
+        self.assertEqual(get_default_model("deepseek"), "deepseek-chat")
+        
+        # Test invalid provider
+        with self.assertRaises(LLMApiError) as cm:
+            get_default_model("invalid")
+        self.assertIn("Invalid provider", str(cm.exception))
+
+    def test_query_llm_with_image(self):
+        """Test LLM querying with image input"""
+        # Create a test image file
+        test_image = b'fake image data'
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as f:
+            f.write(test_image)
+            test_file = f.name
+        
+        try:
+            # Mock image encoding
+            with patch('tools.llm_api.encode_image_file') as mock_encode:
+                mock_encode.return_value = ('base64data', 'image/png')
+                
+                # Test OpenAI vision model
+                response = query_llm(
+                    "Describe this image",
+                    client=self.mock_openai_client,
+                    provider="openai",
+                    model="gpt-4-vision-preview",
+                    image_path=test_file
+                )
+                self.assertEqual(response, "Test OpenAI response")
+                
+                # Verify image was included in messages
+                calls = self.mock_openai_client.chat.completions.create.call_args_list
+                messages = calls[0][1]['messages']
+                self.assertEqual(len(messages), 1)
+                self.assertEqual(messages[0]['role'], 'user')
+                self.assertEqual(len(messages[0]['content']), 2)
+                self.assertEqual(messages[0]['content'][0]['type'], 'text')
+                self.assertEqual(messages[0]['content'][1]['type'], 'image_url')
+                
+                # Test Gemini vision model
+                response = query_llm(
+                    "Describe this image",
+                    client=self.mock_gemini_client,
+                    provider="gemini",
+                    model="gemini-pro-vision",
+                    image_path=test_file
+                )
+                self.assertEqual(response, "Test Gemini response")
+        finally:
+            os.unlink(test_file)
+
+    def test_provider_specific_errors(self):
+        """Test provider-specific error handling"""
+        # Test OpenAI rate limit error
+        self.mock_openai_client.chat.completions.create.side_effect = Exception("Rate limit exceeded")
+        with self.assertRaises(LLMApiError) as cm:
+            query_llm("Test prompt", client=self.mock_openai_client, provider="openai")
+        self.assertIn("Rate limit exceeded", str(cm.exception))
+        
+        # Test Anthropic timeout error
+        self.mock_anthropic_client.messages.create.side_effect = Exception("Request timed out")
+        with self.assertRaises(LLMApiError) as cm:
+            query_llm("Test prompt", client=self.mock_anthropic_client, provider="anthropic")
+        self.assertIn("Request timed out", str(cm.exception))
+        
+        # Test Gemini API error
+        self.mock_gemini_model.generate_content.side_effect = Exception("API error")
+        with self.assertRaises(LLMApiError) as cm:
+            query_llm("Test prompt", client=self.mock_gemini_client, provider="gemini")
+        self.assertIn("API error", str(cm.exception))
+
+    def test_read_content_or_file(self):
+        """Test content/file reading"""
+        # Test direct content
+        content = read_content_or_file("Test content")
+        self.assertEqual(content, "Test content")
+        
+        # Create a test file
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+            f.write('File content')
+            test_file = f.name
+        
+        try:
+            # Test file content
+            content = read_content_or_file(f"@{test_file}")
+            self.assertEqual(content, "File content")
+            
+            # Test empty input
+            content = read_content_or_file("")
+            self.assertEqual(content, "")
+        finally:
+            os.unlink(test_file)
+
+def test_create_invalid_provider():
+    with pytest.raises(LLMApiError) as exc_info:
+        create_llm_client("invalid_provider")
+    assert "Unsupported provider: invalid_provider" in str(exc_info.value)
+
+def test_create_llm_client_missing_api_key():
+    # Clear the environment variable
+    if 'OPENAI_API_KEY' in os.environ:
+        del os.environ['OPENAI_API_KEY']
+    with pytest.raises(LLMApiError) as exc_info:
+        create_llm_client("openai")
+    assert "OPENAI_API_KEY not found in environment variables" in str(exc_info.value)
 
 if __name__ == '__main__':
     unittest.main()
