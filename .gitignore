@@ -56,6 +56,7 @@ credentials.json
 
 # pytest
 .pytest_cache/
+.coverage
 
 # vscode
 .vscode/
@@ -63,3 +64,4 @@ credentials.json
 # Token tracking logs
 token_logs/
 test_token_logs/
+*.log

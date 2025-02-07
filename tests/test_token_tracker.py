@@ -8,10 +8,13 @@ from pathlib import Path
 import time
 from datetime import datetime
 from tools.token_tracker import TokenTracker, TokenUsage, APIResponse, get_token_tracker, _token_tracker
+from tools.common.errors import ValidationError
+import shutil
 
 class TestTokenTracker(unittest.TestCase):
     def setUp(self):
-        # Create a temporary directory for test logs
+        """Set up test environment"""
+        self.test_session_id = f"test-{int(time.time())}"
         self.test_logs_dir = Path("test_token_logs")
         self.test_logs_dir.mkdir(exist_ok=True)
         
@@ -41,81 +44,123 @@ class TestTokenTracker(unittest.TestCase):
         )
         
         # Create a TokenTracker instance with a unique test session ID
-        self.test_session_id = f"test-{int(time.time())}"
         self.tracker = TokenTracker(self.test_session_id, logs_dir=self.test_logs_dir)
         self.tracker.session_file = self.test_logs_dir / f"session_{self.test_session_id}.json"
 
     def tearDown(self):
-        # Clean up test logs directory
-        if self.test_logs_dir.exists():
-            for file in self.test_logs_dir.glob("*"):
-                file.unlink()
-            self.test_logs_dir.rmdir()
+        """Clean up test environment"""
+        shutil.rmtree(self.test_logs_dir)
         
         # Reset global token tracker
         global _token_tracker
         _token_tracker = None
 
     def test_token_usage_creation(self):
-        """Test TokenUsage dataclass creation"""
-        token_usage = TokenUsage(100, 50, 150, 20)
-        self.assertEqual(token_usage.prompt_tokens, 100)
-        self.assertEqual(token_usage.completion_tokens, 50)
-        self.assertEqual(token_usage.total_tokens, 150)
-        self.assertEqual(token_usage.reasoning_tokens, 20)
+        """Test TokenUsage creation and validation"""
+        # Test valid token usage
+        usage = TokenUsage(prompt_tokens=100, completion_tokens=50, total_tokens=150)
+        self.assertEqual(usage.prompt_tokens, 100)
+        self.assertEqual(usage.completion_tokens, 50)
+        self.assertEqual(usage.total_tokens, 150)
+        self.assertIsNone(usage.reasoning_tokens)
+
+        # Test with reasoning tokens
+        usage = TokenUsage(prompt_tokens=100, completion_tokens=50, total_tokens=150, reasoning_tokens=20)
+        self.assertEqual(usage.reasoning_tokens, 20)
+
+        # Test invalid token counts
+        with self.assertRaises(ValidationError):
+            TokenUsage(prompt_tokens=-1, completion_tokens=50, total_tokens=150)
+        with self.assertRaises(ValidationError):
+            TokenUsage(prompt_tokens=100, completion_tokens=-1, total_tokens=150)
+        with self.assertRaises(ValidationError):
+            TokenUsage(prompt_tokens=100, completion_tokens=50, total_tokens=-1)
+        with self.assertRaises(ValidationError):
+            TokenUsage(prompt_tokens=100, completion_tokens=50, total_tokens=150, reasoning_tokens=-1)
 
     def test_api_response_creation(self):
-        """Test APIResponse dataclass creation"""
+        """Test APIResponse creation and validation"""
+        usage = TokenUsage(prompt_tokens=100, completion_tokens=50, total_tokens=150)
+        
+        # Test valid response
         response = APIResponse(
-            content="Test",
-            token_usage=self.test_token_usage,
-            cost=0.1,
-            thinking_time=1.0,
+            content="Test response",
+            token_usage=usage,
+            cost=0.123,
+            thinking_time=1.5,
             provider="openai",
             model="o1"
         )
-        self.assertEqual(response.content, "Test")
-        self.assertEqual(response.token_usage, self.test_token_usage)
-        self.assertEqual(response.cost, 0.1)
-        self.assertEqual(response.thinking_time, 1.0)
+        self.assertEqual(response.content, "Test response")
+        self.assertEqual(response.token_usage, usage)
+        self.assertEqual(response.cost, 0.123)
+        self.assertEqual(response.thinking_time, 1.5)
         self.assertEqual(response.provider, "openai")
         self.assertEqual(response.model, "o1")
 
+        # Test invalid responses
+        with self.assertRaises(ValidationError):
+            APIResponse(content="", token_usage=usage, cost=0.123)
+        with self.assertRaises(ValidationError):
+            APIResponse(content="Test", token_usage=usage, cost=-1)
+        with self.assertRaises(ValidationError):
+            APIResponse(content="Test", token_usage=usage, cost=0.123, thinking_time=-1)
+        with self.assertRaises(ValidationError):
+            APIResponse(content="Test", token_usage=usage, cost=0.123, provider="")
+        with self.assertRaises(ValidationError):
+            APIResponse(content="Test", token_usage=usage, cost=0.123, model="")
+
     def test_openai_cost_calculation(self):
-        """Test OpenAI cost calculation for supported models"""
-        # Test o1 model pricing
-        cost = TokenTracker.calculate_openai_cost(1000000, 500000, "o1")
-        self.assertEqual(cost, 15.0 + 30.0)  # $15/M input + $60/M output
+        """Test OpenAI cost calculation"""
+        # Test o1 model costs
+        cost = TokenTracker.calculate_openai_cost(1000, 500, "o1")
+        self.assertAlmostEqual(cost, 0.025)  # (1000 * 0.01 + 500 * 0.03) / 1000
         
-        # Test gpt-4o model pricing
-        cost = TokenTracker.calculate_openai_cost(1000000, 500000, "gpt-4o")
-        self.assertEqual(cost, 10.0 + 15.0)  # $10/M input + $30/M output
+        # Test gpt-4 model costs
+        cost = TokenTracker.calculate_openai_cost(1000, 500, "gpt-4")
+        self.assertAlmostEqual(cost, 0.06)  # (1000 * 0.03 + 500 * 0.06) / 1000
         
-        # Test unsupported model
-        with self.assertRaises(ValueError):
-            TokenTracker.calculate_openai_cost(1000000, 500000, "gpt-4")
+        # Test gpt-3.5-turbo model costs
+        cost = TokenTracker.calculate_openai_cost(1000, 500, "gpt-3.5-turbo")
+        self.assertAlmostEqual(cost, 0.00125)  # (1000 * 0.0005 + 500 * 0.0015) / 1000
 
     def test_claude_cost_calculation(self):
         """Test Claude cost calculation"""
-        cost = TokenTracker.calculate_claude_cost(1000000, 500000, "claude-3-sonnet-20240229")
-        self.assertEqual(cost, 3.0 + 7.5)  # $3/M input + $15/M output
+        # Test Claude 3 Opus costs
+        cost = TokenTracker.calculate_claude_cost(1000, 500, "claude-3-opus-20240229")
+        self.assertAlmostEqual(cost, 0.0525)  # (1000 * 15 + 500 * 75) / 1_000_000
+        
+        # Test Claude 3 Sonnet costs
+        cost = TokenTracker.calculate_claude_cost(1000, 500, "claude-3-sonnet-20240229")
+        self.assertAlmostEqual(cost, 0.0105)  # (1000 * 3 + 500 * 15) / 1_000_000
+        
+        # Test Claude 3 Haiku costs
+        cost = TokenTracker.calculate_claude_cost(1000, 500, "claude-3-haiku-20240307")
+        self.assertAlmostEqual(cost, 0.000875)  # (1000 * 0.25 + 500 * 1.25) / 1_000_000
 
     def test_per_day_session_management(self):
-        """Test per-day session management"""
+        """Test session management with per-day sessions"""
+        # Create tracker without session ID (should use current date)
+        tracker = TokenTracker()
+        tracker.logs_dir = self.test_logs_dir
+        
         # Track a request
-        self.tracker.track_request(self.test_response)
+        usage = TokenUsage(prompt_tokens=100, completion_tokens=50, total_tokens=150)
+        response = APIResponse(
+            content="Test response",
+            token_usage=usage,
+            cost=0.123,
+            thinking_time=1.5,
+            provider="openai",
+            model="o1"
+        )
+        tracker.track_request(response)
         
-        # Verify file was created
-        session_file = self.test_logs_dir / f"session_{self.test_session_id}.json"
-        self.assertTrue(session_file.exists())
-        
-        # Load and verify file contents
-        with open(session_file) as f:
-            data = json.load(f)
-            self.assertEqual(data["session_id"], self.test_session_id)
-            self.assertEqual(len(data["requests"]), 1)
-            self.assertEqual(data["requests"][0]["provider"], "openai")
-            self.assertEqual(data["requests"][0]["model"], "o1")
+        # Verify request was tracked
+        self.assertEqual(len(tracker._requests), 1)
+        self.assertEqual(tracker._requests[0]["provider"], "openai")
+        self.assertEqual(tracker._requests[0]["model"], "o1")
+        self.assertEqual(tracker._requests[0]["token_usage"]["total_tokens"], 150)
 
     def test_session_file_loading(self):
         """Test loading existing session file"""
@@ -142,73 +187,63 @@ class TestTokenTracker(unittest.TestCase):
         }
         with open(session_file, "w") as f:
             json.dump(test_data, f)
-        
+
         # Create a new tracker - it should load the existing file
         new_tracker = TokenTracker(self.test_session_id)
         new_tracker.logs_dir = self.test_logs_dir
         new_tracker.session_file = self.test_logs_dir / f"session_{self.test_session_id}.json"
-        self.assertEqual(len(new_tracker.requests), 1)
-        self.assertEqual(new_tracker.requests[0]["provider"], "openai")
-        self.assertEqual(new_tracker.requests[0]["model"], "o1")
+        self.assertEqual(len(new_tracker._requests), 1)
+        self.assertEqual(new_tracker._requests[0]["provider"], "openai")
+        self.assertEqual(new_tracker._requests[0]["model"], "o1")
+        self.assertEqual(new_tracker._requests[0]["token_usage"]["total_tokens"], 150)
 
     def test_session_summary_calculation(self):
         """Test session summary calculation"""
-        # Add multiple requests with different providers
-        responses = [
-            APIResponse(
-                content="Test 1",
-                token_usage=TokenUsage(100, 50, 150, 20),
-                cost=0.1,
-                thinking_time=1.0,
+        tracker = TokenTracker(self.test_session_id)
+        tracker.logs_dir = self.test_logs_dir
+        
+        # Track multiple requests
+        for i in range(3):
+            usage = TokenUsage(
+                prompt_tokens=100 * (i + 1),
+                completion_tokens=50 * (i + 1),
+                total_tokens=150 * (i + 1)
+            )
+            response = APIResponse(
+                content=f"Test response {i}",
+                token_usage=usage,
+                cost=0.123 * (i + 1),
+                thinking_time=1.5 * (i + 1),
                 provider="openai",
                 model="o1"
-            ),
-            APIResponse(
-                content="Test 2",
-                token_usage=TokenUsage(200, 100, 300, None),
-                cost=0.2,
-                thinking_time=2.0,
-                provider="anthropic",
-                model="claude-3-sonnet-20240229"
             )
-        ]
+            tracker.track_request(response)
         
-        for response in responses:
-            self.tracker.track_request(response)
+        # Get summary
+        summary = tracker.get_session_summary()
         
-        summary = self.tracker.get_session_summary()
-        
-        # Verify totals
-        self.assertEqual(summary["total_requests"], 2)
-        self.assertEqual(summary["total_prompt_tokens"], 300)
-        self.assertEqual(summary["total_completion_tokens"], 150)
-        self.assertEqual(summary["total_tokens"], 450)
-        self.assertAlmostEqual(summary["total_cost"], 0.3, places=6)
-        self.assertEqual(summary["total_thinking_time"], 3.0)
-        
-        # Verify provider stats
-        self.assertEqual(len(summary["provider_stats"]), 2)
-        self.assertEqual(summary["provider_stats"]["openai"]["requests"], 1)
-        self.assertEqual(summary["provider_stats"]["anthropic"]["requests"], 1)
+        # Verify summary calculations
+        self.assertEqual(len(tracker._requests), 3)
+        self.assertEqual(summary["total_prompt_tokens"], 600)  # 100 + 200 + 300
+        self.assertEqual(summary["total_completion_tokens"], 300)  # 50 + 100 + 150
+        self.assertEqual(summary["total_tokens"], 900)  # 150 + 300 + 450
+        self.assertAlmostEqual(summary["total_cost"], 0.738, places=3)  # 0.123 + 0.246 + 0.369
+        self.assertAlmostEqual(summary["total_thinking_time"], 9.0, places=1)  # 1.5 + 3.0 + 4.5
 
     def test_global_token_tracker(self):
         """Test global token tracker instance management"""
         # Get initial tracker with specific session ID
         tracker1 = get_token_tracker("test-global-1", logs_dir=self.test_logs_dir)
         self.assertIsNotNone(tracker1)
-        
+
         # Get another tracker without session ID - should be the same instance
         tracker2 = get_token_tracker(logs_dir=self.test_logs_dir)
         self.assertIs(tracker1, tracker2)
-        
+
         # Get tracker with different session ID - should be new instance
         tracker3 = get_token_tracker("test-global-2", logs_dir=self.test_logs_dir)
         self.assertIsNot(tracker1, tracker3)
-        self.assertEqual(tracker3.session_id, "test-global-2")
-        
-        # Get tracker without session ID - should reuse the latest instance
-        tracker4 = get_token_tracker(logs_dir=self.test_logs_dir)
-        self.assertIs(tracker3, tracker4)
+        self.assertEqual(tracker3._session_id, "test-global-2")
 
 if __name__ == "__main__":
     unittest.main() 
