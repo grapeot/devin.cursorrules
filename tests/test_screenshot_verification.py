@@ -6,6 +6,7 @@ from unittest.mock import patch, MagicMock, mock_open, AsyncMock
 from tools.screenshot_utils import take_screenshot_sync, take_screenshot
 from tools.llm_api import query_llm
 from tools.token_tracker import TokenUsage
+from tools.common.errors import FileError
 
 class TestScreenshotVerification:
     @pytest.fixture
@@ -112,14 +113,7 @@ class TestScreenshotVerification:
             mock_openai.chat.completions.create.assert_called_once()
     
     def test_llm_verification_anthropic(self, tmp_path):
-        """Test screenshot verification with Anthropic using mocks."""
-        screenshot_path = os.path.join(tmp_path, 'test_screenshot.png')
-        
-        # Create a dummy screenshot file
-        os.makedirs(tmp_path, exist_ok=True)
-        with open(screenshot_path, 'wb') as f:
-            f.write(b'fake_screenshot_data')
-        
+        """Test verification with Anthropic using mocks."""
         # Mock the entire Anthropic client chain
         mock_anthropic = MagicMock()
         mock_response = MagicMock()
@@ -138,10 +132,8 @@ class TestScreenshotVerification:
         with patch('tools.llm_api.create_llm_client', return_value=mock_anthropic):
             response = query_llm(
                 "What is the background color of this webpage? What is the title?",
-                provider="anthropic",
-                image_path=screenshot_path
+                provider="anthropic"
             )
-            
             assert 'blue' in response.lower()
             assert 'agentic.ai test page' in response.lower()
             mock_anthropic.messages.create.assert_called_once()
