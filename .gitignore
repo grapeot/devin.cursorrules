@@ -51,10 +51,13 @@ credentials.json
 **/__pycache__/
 
 # python virtual environment
-/venv/
+.venv/
 
 # pytest
 .pytest_cache/
 
 # vscode
 .vscode/
+
+# Cursor
+.cursorignore

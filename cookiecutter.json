@@ -4,9 +4,6 @@
     "llm_provider": ["None", "OpenAI", "Anthropic", "DeepSeek", "Google", "Azure OpenAI"],
     "_copy_without_render": [
         "*.py",
-        "*.md",
-        ".cursorrules",
-        ".windsurfrules",
         ".env"
     ]
 } 

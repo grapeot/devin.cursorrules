@@ -40,9 +40,27 @@ def setup_env_file():
                         if not key_found:
                             f.write(f'{env_var_name}={llm_api_key}\n')
 
+def handle_ide_rules():
+    """Handle IDE-specific rules files based on project type"""
+    project_type = '{{ cookiecutter.project_type }}'
+    
+    # For Cursor projects: only keep .cursorrules
+    if project_type == 'cursor':
+        if os.path.exists('.windsurfrules'):
+            os.remove('.windsurfrules')
+        if os.path.exists('scratchpad.md'):
+            os.remove('scratchpad.md')
+    # For Windsurf projects: keep both .windsurfrules and scratchpad.md
+    else:
+        if os.path.exists('.cursorrules'):
+            os.remove('.cursorrules')
+
 def main():
     # Set up environment file
     setup_env_file()
+    
+    # Handle IDE-specific rules
+    handle_ide_rules()
     
     # Create virtual environment
     print("\nCreating virtual environment...")
