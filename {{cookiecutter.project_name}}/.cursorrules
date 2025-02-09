@@ -103,3 +103,12 @@ If needed, you can further use the `web_scraper.py` file to scrape the web page 
 - Use 'gpt-4o' as the model name for OpenAI's GPT-4 with vision capabilities
 
 # Scratchpad
+
+Current Task: Copy updated .windsurfrules and scratchpad.md from master to template branch
+
+Steps:
+[ ] Check current branch and switch to template branch
+[ ] Copy updated files from master
+[ ] Commit changes
+
+Progress:
