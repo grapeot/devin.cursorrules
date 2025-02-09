@@ -24,8 +24,18 @@ if llm_provider not in valid_providers:
 
 # Only ask for the key if provider is not 'None'
 if llm_provider != 'None':
-    print("\nNote: You can enter your LLM API key now or later by editing the .env file.")
-    api_key_input = input(f"Enter your LLM API key for {llm_provider} (press Enter to skip): ")
+    print("\nYou've chosen to enable advanced AI features with " + llm_provider + ".")
+    print("These features include:")
+    print("- Multi-modal analysis (e.g., screenshot verification for frontend development)")
+    print("- Intelligent code analysis and suggestions")
+    print("- Advanced debugging assistance")
+    print("\nNote: These are optional features. You can:")
+    print("1. Enter your API key now")
+    print("2. Skip now and add it later in the .env file")
+    print("3. Change your mind and not use these features at all")
+    print("\nYour project will work perfectly fine without these features.")
+    
+    api_key_input = input(f"\nEnter your {llm_provider} API key (press Enter to skip): ")
     
     with open(".temp_api_key", "w") as f:
         f.write(api_key_input.strip()) 

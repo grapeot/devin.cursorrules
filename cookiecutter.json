@@ -1,4 +1,9 @@
 {
+    "__help": {
+        "project_name": "Name of your project (must start with a letter, contain only lowercase letters, numbers, and hyphens)",
+        "project_type": "Choose your IDE: Cursor (recommended) or Windsurf",
+        "llm_provider": "The following section is completely OPTIONAL. If you have an API key from any of these providers, you can enable advanced AI features like multi-modal analysis and screenshot verification. If not, just select 'None' - the project works perfectly fine without these features."
+    },
     "project_name": "my-project",
     "project_type": ["cursor", "windsurf"],
     "llm_provider": ["None", "OpenAI", "Anthropic", "DeepSeek", "Google", "Azure OpenAI"],

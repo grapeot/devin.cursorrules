@@ -43,6 +43,7 @@ def setup_env_file():
 def handle_ide_rules():
     """Handle IDE-specific rules files based on project type"""
     project_type = '{{ cookiecutter.project_type }}'
+    llm_provider = '{{ cookiecutter.llm_provider }}'
     
     # For Cursor projects: only keep .cursorrules
     if project_type == 'cursor':
@@ -50,16 +51,45 @@ def handle_ide_rules():
             os.remove('.windsurfrules')
         if os.path.exists('scratchpad.md'):
             os.remove('scratchpad.md')
+        
+        # Update .cursorrules if needed
+        if os.path.exists('.cursorrules') and llm_provider == 'None':
+            with open('.cursorrules', 'r') as f:
+                content = f.readlines()
+            
+            # Find the Screenshot Verification section and insert the notice before it
+            for i, line in enumerate(content):
+                if '## Screenshot Verification' in line:
+                    content.insert(i, '[NOTE TO CURSOR: Since no API key is configured, please ignore both the Screenshot Verification and LLM sections below.]\n')
+                    content.insert(i + 1, '[NOTE TO USER: If you have configured or plan to configure an API key in the future, simply delete these two notice lines to enable these features.]\n\n')
+                    break
+            
+            with open('.cursorrules', 'w') as f:
+                f.writelines(content)
+    
     # For Windsurf projects: keep both .windsurfrules and scratchpad.md
     else:
         if os.path.exists('.cursorrules'):
             os.remove('.cursorrules')
+        
+        # Update .windsurfrules if needed
+        if os.path.exists('.windsurfrules') and llm_provider == 'None':
+            with open('.windsurfrules', 'r') as f:
+                content = f.readlines()
+            
+            # Find the Screenshot Verification section and insert the notice before it
+            for i, line in enumerate(content):
+                if '## Screenshot Verification' in line:
+                    content.insert(i, '[NOTE TO CURSOR: Since no API key is configured, please ignore both the Screenshot Verification and LLM sections below.]\n')
+                    content.insert(i + 1, '[NOTE TO USER: If you have configured or plan to configure an API key in the future, simply delete these two notice lines to enable these features.]\n\n')
+                    break
+            
+            with open('.windsurfrules', 'w') as f:
+                f.writelines(content)
 
 def main():
-    # Set up environment file
+    """Main function to set up the project"""
     setup_env_file()
-    
-    # Handle IDE-specific rules
     handle_ide_rules()
     
     # Create virtual environment
