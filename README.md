@@ -1,6 +1,6 @@
 # Transform your $20 Cursor into a Devin-like AI Assistant
 
-This repository gives you everything needed to supercharge your Cursor or Windsurf IDE with **advanced** agentic AI capabilities—similar to the $500/month Devin—but at a fraction of the cost. In under a minute, you'll gain:
+This repository gives you everything needed to supercharge your Cursor/Windsurf IDE or GitHub Copilot with **advanced** agentic AI capabilities—similar to the $500/month Devin—but at a fraction of the cost. In under a minute, you'll gain:
 
 * Automated planning and self-evolution, so your AI "thinks before it acts" and learns from mistakes
 * Extended tool usage, including web browsing, search engine queries, and LLM-driven text/image analysis
@@ -26,7 +26,7 @@ Devin impressed many by acting like an intern who writes its own plan, updates t
    ```
 
    **Option 2: Manual Setup**
-   Copy the provided config files into your project folder. Cursor users only need the .cursorrules file.
+   Copy the `tools` folder and the following config files into your project root folder: Windsurf users need both `.windsurfrules` and `scratchpad.md` files. Cursor users only need the `.cursorrules` file. Github Copilot users need the `.github/copilot-instructions.md` file.
 
 2.	Planner-Executor Multi-Agent (Experimental)
 
