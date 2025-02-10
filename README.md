@@ -50,6 +50,8 @@ Devin impressed many by acting like an intern who writes its own plan, updates t
 	
 ## Usage
 
+For a detailed walkthrough of setting up and using devin.cursorrules with Cursor, check out our [step-by-step tutorial](step_by_step_tutorial.md). This guide covers everything from initial Cursor setup to configuring devin.cursorrules and using the enhanced capabilities.
+
 1. Choose your setup method:
    - **Cookiecutter (Recommended)**: Follow the prompts after running the cookiecutter command
    - **Manual**: Copy the files you need from this repository
