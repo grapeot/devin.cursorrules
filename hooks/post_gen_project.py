@@ -4,7 +4,7 @@ import platform
 
 def setup_env_file():
     """Set up the .env file with API key if provided"""
-    llm_provider = '{{ cookiecutter.llm_provider }}'
+    llm_provider = '{{ cookiecutter["llm_provider [Optional. Press Enter to use None]"] }}'
     
     # If provider != 'None', retrieve whatever was saved in pre_gen_project.py
     if llm_provider != 'None':
@@ -43,7 +43,7 @@ def setup_env_file():
 def handle_ide_rules():
     """Handle IDE-specific rules files based on project type"""
     project_type = '{{ cookiecutter.project_type }}'
-    llm_provider = '{{ cookiecutter.llm_provider }}'
+    llm_provider = '{{ cookiecutter["llm_provider [Optional. Press Enter to use None]"] }}'
     
     # For Cursor projects: only keep .cursorrules
     if project_type == 'cursor':
