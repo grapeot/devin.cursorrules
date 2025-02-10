@@ -207,7 +207,22 @@ def query_llm(prompt: str, client=None, model=None, provider="openai", image_pat
             
         elif provider == "gemini":
             model = client.GenerativeModel(model)
-            response = model.generate_content(prompt)
+            if image_path:
+                file = genai.upload_file(image_path, mime_type="image/png")
+                chat_session = model.start_chat(
+                    history=[{
+                        "role": "user",
+                        "parts": [file, prompt]
+                    }]
+                )
+            else:
+                chat_session = model.start_chat(
+                    history=[{
+                        "role": "user",
+                        "parts": [prompt]
+                    }]
+                )
+            response = chat_session.send_message(prompt)
             return response.text
             
     except Exception as e:
