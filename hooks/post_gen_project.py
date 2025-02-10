@@ -94,14 +94,14 @@ def main():
     
     # Create virtual environment
     print("\nCreating virtual environment...")
-    os.system('python -m venv venv')
+    os.system('python3 -m venv venv')
     
     # Install dependencies
     print("\nInstalling dependencies...")
     if platform.system() == 'Windows':
         os.system('venv\\Scripts\\pip install -r requirements.txt')
     else:
-        os.system('venv/bin/pip install -r requirements.txt')
+        os.system('venv/bin/pip3 install -r requirements.txt')
     
     print("\nSetup completed successfully!")
     print("To get started:")
