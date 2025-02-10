@@ -59,3 +59,5 @@ credentials.json
 
 # vscode
 .vscode/
+
+.cursorignore
