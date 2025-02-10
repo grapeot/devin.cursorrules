@@ -13,8 +13,8 @@ if not re.match(r'^[a-z][-a-z0-9]+$', project_name):
     sys.exit(1)
 
 # Validate project type
-if project_type not in ['cursor', 'windsurf']:
-    print('ERROR: Project type must be either "cursor" or "windsurf".')
+if project_type not in ['cursor', 'windsurf', 'github copilot']:
+    print('ERROR: Project type must be either "cursor", "windsurf", or "github copilot".')
     sys.exit(1)
 
 # Validate LLM provider
@@ -38,4 +38,4 @@ if llm_provider != 'None':
     api_key_input = input(f"\nEnter your {llm_provider} API key (press Enter to skip): ")
     
     with open(".temp_api_key", "w") as f:
-        f.write(api_key_input.strip()) 
+        f.write(api_key_input.strip())

@@ -51,6 +51,8 @@ def handle_ide_rules():
             os.remove('.windsurfrules')
         if os.path.exists('scratchpad.md'):
             os.remove('scratchpad.md')
+        if os.path.exists('.github/copilot-instructions.md'):
+            os.remove('.github/copilot-instructions.md')
         
         # Update .cursorrules if needed
         if os.path.exists('.cursorrules') and llm_provider == 'None':
@@ -68,9 +70,11 @@ def handle_ide_rules():
                 f.writelines(content)
     
     # For Windsurf projects: keep both .windsurfrules and scratchpad.md
-    else:
+    elif project_type == 'windsurf':
         if os.path.exists('.cursorrules'):
             os.remove('.cursorrules')
+        if os.path.exists('.github/copilot-instructions.md'):
+            os.remove('.github/copilot-instructions.md')
         
         # Update .windsurfrules if needed
         if os.path.exists('.windsurfrules') and llm_provider == 'None':
@@ -85,6 +89,30 @@ def handle_ide_rules():
                     break
             
             with open('.windsurfrules', 'w') as f:
+                f.writelines(content)
+    
+    # For GitHub Copilot projects: keep .github/copilot-instructions.md
+    elif project_type == 'github copilot':
+        if os.path.exists('.cursorrules'):
+            os.remove('.cursorrules')
+        if os.path.exists('.windsurfrules'):
+            os.remove('.windsurfrules')
+        if os.path.exists('scratchpad.md'):
+            os.remove('scratchpad.md')
+        
+        # Update .github/copilot-instructions.md if needed
+        if os.path.exists('.github/copilot-instructions.md') and llm_provider == 'None':
+            with open('.github/copilot-instructions.md', 'r') as f:
+                content = f.readlines()
+            
+            # Find the Screenshot Verification section and insert the notice before it
+            for i, line in enumerate(content):
+                if '## Screenshot Verification' in line:
+                    content.insert(i, '[NOTE TO CURSOR: Since no API key is configured, please ignore both the Screenshot Verification and LLM sections below.]\n')
+                    content.insert(i + 1, '[NOTE TO USER: If you have configured or plan to configure an API key in the future, simply delete these two notice lines to enable these features.]\n\n')
+                    break
+            
+            with open('.github/copilot-instructions.md', 'w') as f:
                 f.writelines(content)
 
 def main():
@@ -113,4 +141,4 @@ def main():
     print("2. Check the README.md file for more information")
 
 if __name__ == '__main__':
-    main() 
+    main()

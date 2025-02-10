@@ -2,6 +2,8 @@
 
 {% if cookiecutter.project_type == 'cursor' %}
 A Cursor-powered AI development environment with advanced agentic capabilities.
+{% elif cookiecutter.project_type == 'github copilot' %}
+A GitHub Copilot-powered AI development environment with advanced coding assistance.
 {% else %}
 A Windsurf-powered AI development environment with streamlined development capabilities.
 {% endif %}
@@ -79,6 +81,11 @@ This project uses `.cursorrules` to configure the AI assistant. The assistant ca
 - Verify screenshots
 - Perform web searches
 - Analyze images and code
+{% elif cookiecutter.project_type == 'github copilot' %}
+This project uses `.github/copilot-instructions.md` to configure the AI assistant. The assistant can:
+- Help with coding tasks
+- Perform web searches
+- Analyze code
 {% else %}
 This project uses `.windsurfrules` and `scratchpad.md` to configure the AI assistant. The assistant can:
 - Help with coding tasks
@@ -105,4 +112,4 @@ Note: Basic functionality works without API keys. Advanced features (like multim
 
 ## License
 
-MIT License 
+MIT License
