@@ -8,7 +8,7 @@
     "project_name": "my-project",
     "project_type": ["cursor", "windsurf", "github copilot"],
     "llm_provider [Optional. Press Enter to use None]": ["None", "OpenAI", "Anthropic", "DeepSeek", "Google", "Azure OpenAI"],
-    "multi_agent": "no",
+    "multi_agent": ["no", "yes"],
     "_copy_without_render": [
         "*.py",
         ".env"
