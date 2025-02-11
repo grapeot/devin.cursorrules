@@ -119,8 +119,9 @@ def clone_relevant_branch():
     """Clone the relevant branch into the {{cookiecutter.project_name}} folder based on user's choice"""
     multi_agent = '{{ cookiecutter.multi_agent }}'
     project_name = '{{ cookiecutter.project_name }}'
+    project_type = '{{ cookiecutter.project_type }}'
     
-    if multi_agent == 'yes':
+    if multi_agent == 'yes' and project_type == 'cursor':
         branch = 'multi-agent'
     else:
         branch = 'master'
