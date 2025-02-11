@@ -115,10 +115,23 @@ def handle_ide_rules():
             with open('.github/copilot-instructions.md', 'w') as f:
                 f.writelines(content)
 
+def clone_relevant_branch():
+    """Clone the relevant branch into the {{cookiecutter.project_name}} folder based on user's choice"""
+    multi_agent = '{{ cookiecutter.multi_agent }}'
+    project_name = '{{ cookiecutter.project_name }}'
+    
+    if multi_agent == 'yes':
+        branch = 'multi-agent'
+    else:
+        branch = 'master'
+    
+    os.system(f'git clone -b {branch} https://github.com/grapeot/devin.cursorrules.git {project_name}')
+
 def main():
     """Main function to set up the project"""
     setup_env_file()
     handle_ide_rules()
+    clone_relevant_branch()
     
     # Create virtual environment
     print("\nCreating virtual environment...")

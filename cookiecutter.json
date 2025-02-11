@@ -2,11 +2,13 @@
     "__help": {
         "project_name": "Name of your project (must start with a letter, contain only lowercase letters, numbers, and hyphens)",
         "project_type": "Choose your IDE: Cursor (recommended), Windsurf, or GitHub Copilot (VS Code)",
-        "llm_provider": "[Optional] Select your LLM provider. If you have an API key from any of these providers, you can enable advanced AI features like multi-modal analysis and screenshot verification."
+        "llm_provider": "[Optional] Select your LLM provider. If you have an API key from any of these providers, you can enable advanced AI features like multi-modal analysis and screenshot verification.",
+        "multi_agent": "Should the project use the multi-agent setup? (yes or no)"
     },
     "project_name": "my-project",
     "project_type": ["cursor", "windsurf", "github copilot"],
     "llm_provider [Optional. Press Enter to use None]": ["None", "OpenAI", "Anthropic", "DeepSeek", "Google", "Azure OpenAI"],
+    "multi_agent": "no",
     "_copy_without_render": [
         "*.py",
         ".env"
