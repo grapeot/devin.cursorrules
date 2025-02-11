@@ -17,8 +17,7 @@
         "type": "string",
         "default": "no",
         "choices": ["yes", "no"],
-        "description": "Do you want to set up multi-agent?",
-        "condition": "cookiecutter.project_type == 'cursor'"
+        "description": "Do you want to set up multi-agent?"
     },
     "_copy_without_render": [
         "*.py",
