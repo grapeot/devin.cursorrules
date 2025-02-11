@@ -6,9 +6,20 @@
         "multi_agent": "Should the project use the multi-agent setup? (yes or no)"
     },
     "project_name": "my-project",
-    "project_type": ["cursor", "windsurf", "github copilot"],
+    "project_type": {
+        "type": "string",
+        "default": "cursor",
+        "choices": ["cursor", "windsurf", "github copilot"],
+        "description": "Select the project type"
+    },
     "llm_provider [Optional. Press Enter to use None]": ["None", "OpenAI", "Anthropic", "DeepSeek", "Google", "Azure OpenAI"],
-    "multi_agent": ["no", "yes"],
+    "multi_agent": {
+        "type": "string",
+        "default": "no",
+        "choices": ["yes", "no"],
+        "description": "Do you want to set up multi-agent?",
+        "condition": "cookiecutter.project_type == 'cursor'"
+    },
     "_copy_without_render": [
         "*.py",
         ".env"
