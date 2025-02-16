@@ -12,8 +12,8 @@ import base64
 from typing import Optional, Union, List
 import mimetypes
 import time
-import token_tracker
-from token_tracker import TokenUsage, APIResponse, get_token_tracker
+from . import token_tracker
+from .token_tracker import TokenUsage, APIResponse, get_token_tracker
 
 def load_environment():
     """Load environment variables from .env files in order of precedence"""
