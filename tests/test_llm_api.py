@@ -112,6 +112,14 @@ class TestLLMAPI(unittest.TestCase):
         self.mock_gemini_model.generate_content.return_value = self.mock_gemini_response
         self.mock_gemini_client.GenerativeModel.return_value = self.mock_gemini_model
         
+        # Set up SiliconFlow-style response
+        self.mock_siliconflow_response = MagicMock()
+        self.mock_siliconflow_choice = MagicMock()
+        self.mock_siliconflow_message = MagicMock()
+        self.mock_siliconflow_message.content = "Test Siliconflow response"
+        self.mock_siliconflow_choice.message = self.mock_siliconflow_message
+        self.mock_siliconflow_response.choices = [self.mock_siliconflow_choice]
+        
         # Mock environment variables
         self.env_patcher = patch.dict('os.environ', {
             'OPENAI_API_KEY': 'test-openai-key',
@@ -119,7 +127,8 @@ class TestLLMAPI(unittest.TestCase):
             'ANTHROPIC_API_KEY': 'test-anthropic-key',
             'GOOGLE_API_KEY': 'test-google-key',
             'AZURE_OPENAI_API_KEY': 'test-azure-key',
-            'AZURE_OPENAI_MODEL_DEPLOYMENT': 'test-model-deployment'
+            'AZURE_OPENAI_MODEL_DEPLOYMENT': 'test-model-deployment',
+            'SILICONFLOW_API_KEY': 'test-siliconflow-key'
         })
         self.env_patcher.start()
         
@@ -164,6 +173,17 @@ class TestLLMAPI(unittest.TestCase):
         mock_openai.assert_called_once_with(
             api_key='test-deepseek-key',
             base_url="https://api.deepseek.com/v1"
+        )
+        self.assertEqual(client, self.mock_openai_client)
+
+    @unittest.skipIf(skip_llm_tests, skip_message)
+    @patch('tools.llm_api.OpenAI')
+    def test_create_siliconflow_client(self, mock_openai):
+        mock_openai.return_value = self.mock_openai_client
+        client = create_llm_client("siliconflow")
+        mock_openai.assert_called_once_with(
+            api_key='test-siliconflow-key',
+            base_url="https://api.siliconflow.cn/v1"
         )
         self.assertEqual(client, self.mock_openai_client)
 
@@ -230,6 +250,19 @@ class TestLLMAPI(unittest.TestCase):
         self.assertEqual(response, "Test OpenAI response")
         self.mock_openai_client.chat.completions.create.assert_called_once_with(
             model="deepseek-chat",
+            messages=[{"role": "user", "content": [{"type": "text", "text": "Test prompt"}]}],
+            temperature=0.7
+        )
+
+    @unittest.skipIf(skip_llm_tests, skip_message)
+    @patch('tools.llm_api.create_llm_client')
+    def test_query_siliconflow(self, mock_create_client):
+        self.mock_openai_client.chat.completions.create.return_value = self.mock_siliconflow_response
+        mock_create_client.return_value = self.mock_openai_client
+        response = query_llm("Test prompt", provider="siliconflow")
+        self.assertEqual(response, "Test Siliconflow response")
+        self.mock_openai_client.chat.completions.create.assert_called_once_with(
+            model="deepseek-ai/DeepSeek-R1",
             messages=[{"role": "user", "content": [{"type": "text", "text": "Test prompt"}]}],
             temperature=0.7
         )
