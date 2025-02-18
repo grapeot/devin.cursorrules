@@ -5,7 +5,7 @@ import sys
 project_name = '{{ cookiecutter.project_name }}'
 project_type = '{{ cookiecutter.project_type }}'
 llm_provider = '{{ cookiecutter["llm_provider [Optional. Press Enter to use None]"] }}'
-valid_providers = ['None', 'OpenAI', 'Anthropic', 'DeepSeek', 'Google', 'Azure OpenAI']
+valid_providers = ['None', 'OpenAI', 'Anthropic', 'DeepSeek', 'Google', 'Azure OpenAI', 'Siliconflow']
 
 # Validate project name
 if not re.match(r'^[a-z][-a-z0-9]+$', project_name):

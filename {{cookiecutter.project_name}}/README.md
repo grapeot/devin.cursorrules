@@ -101,7 +101,7 @@ Configure these in your `.env` file:
 - `AZURE_OPENAI_API_KEY`: Azure OpenAI API key (optional)
 - `AZURE_OPENAI_ENDPOINT`: Azure OpenAI endpoint (optional)
 - `AZURE_OPENAI_MODEL_DEPLOYMENT`: Azure OpenAI model deployment name (optional)
-
+- `SILICONFLOW_API_KEY`: Siliconflow API key (optional)
 Note: Basic functionality works without API keys. Advanced features (like multimodal analysis) require appropriate API keys.
 
 ## Development Tools

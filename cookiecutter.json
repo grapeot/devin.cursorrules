@@ -6,7 +6,7 @@
     },
     "project_name": "my-project",
     "project_type": ["cursor", "windsurf", "github copilot"],
-    "llm_provider [Optional. Press Enter to use None]": ["None", "OpenAI", "Anthropic", "DeepSeek", "Google", "Azure OpenAI"],
+    "llm_provider [Optional. Press Enter to use None]": ["None", "OpenAI", "Anthropic", "DeepSeek", "Google", "Azure OpenAI", "Siliconflow"],
     "_copy_without_render": [
         "*.py",
         ".env"

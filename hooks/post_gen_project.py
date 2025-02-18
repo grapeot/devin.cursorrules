@@ -19,7 +19,8 @@ def setup_env_file():
                     'Anthropic': 'ANTHROPIC_API_KEY',
                     'DeepSeek': 'DEEPSEEK_API_KEY',
                     'Google': 'GOOGLE_API_KEY',
-                    'Azure OpenAI': 'AZURE_OPENAI_API_KEY'
+                    'Azure OpenAI': 'AZURE_OPENAI_API_KEY',
+                    'Siliconflow': 'SILICONFLOW_API_KEY'
                 }
                 env_var_name = provider_env_vars.get(llm_provider)
                 if env_var_name:
