@@ -25,8 +25,6 @@ Devin impressed many by acting like an intern who writes its own plan, updates t
    cookiecutter gh:grapeot/devin.cursorrules --checkout template
    ```
 
-   Note we had reports on python 3.13 isn't compatible (Issue [#76](https://github.com/grapeot/devin.cursorrules/issues/76)). It's recommended to use 3.12 or lower for now.
-
    **Option 2: Manual Setup**
    Copy the `tools` folder and the following config files into your project root folder: Windsurf users need both `.windsurfrules` and `scratchpad.md` files. Cursor users only need the `.cursorrules` file. Github Copilot users need the `.github/copilot-instructions.md` file.
 
