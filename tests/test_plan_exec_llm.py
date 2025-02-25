@@ -8,8 +8,8 @@ import sys
 
 # Add the parent directory to the Python path so we can import the module
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from tools.plan_exec_llm import load_environment, read_plan_status, read_file_content, create_llm_client, query_llm
-from tools.plan_exec_llm import TokenUsage
+from tools.plan_exec_llm import load_environment, read_plan_status, read_file_content, query_llm_with_plan
+from tools.token_tracker import TokenUsage
 
 class TestPlanExecLLM(unittest.TestCase):
     def setUp(self):
@@ -18,9 +18,13 @@ class TestPlanExecLLM(unittest.TestCase):
         self.original_env = dict(os.environ)
         # Set test environment variables
         os.environ['OPENAI_API_KEY'] = 'test_key'
+        os.environ['DEEPSEEK_API_KEY'] = 'test_deepseek_key'
+        os.environ['ANTHROPIC_API_KEY'] = 'test_anthropic_key'
         
         self.test_env_content = """
 OPENAI_API_KEY=test_key
+DEEPSEEK_API_KEY=test_deepseek_key
+ANTHROPIC_API_KEY=test_anthropic_key
 """
         self.test_plan_content = """
 # Multi-Agent Scratchpad
@@ -66,55 +70,35 @@ Test content
         content = read_file_content('nonexistent_file.txt')
         self.assertIsNone(content)
 
-    @patch('tools.plan_exec_llm.OpenAI')
-    def test_create_llm_client(self, mock_openai):
-        """Test LLM client creation"""
-        mock_client = MagicMock()
-        mock_openai.return_value = mock_client
-        
-        client = create_llm_client()
-        self.assertEqual(client, mock_client)
-        mock_openai.assert_called_once_with(api_key='test_key')
-
-    @patch('tools.plan_exec_llm.create_llm_client')
-    def test_query_llm(self, mock_create_client):
-        """Test LLM querying"""
-        # Mock the OpenAI response
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message = MagicMock()
-        mock_response.choices[0].message.content = "Test response"
-        mock_response.usage = MagicMock()
-        mock_response.usage.prompt_tokens = 10
-        mock_response.usage.completion_tokens = 5
-        mock_response.usage.total_tokens = 15
-        mock_response.usage.completion_tokens_details = MagicMock()
-        mock_response.usage.completion_tokens_details.reasoning_tokens = None
-        
-        mock_client = MagicMock()
-        mock_client.chat.completions.create.return_value = mock_response
-        mock_create_client.return_value = mock_client
+    @patch('tools.llm_api.query_llm')
+    def test_query_llm_with_plan(self, mock_query_llm):
+        """Test LLM querying with plan context"""
+        # Mock the LLM response
+        mock_query_llm.return_value = "Test response"
 
         # Test with various combinations of parameters
-        response = query_llm("Test plan", "Test prompt", "Test file content")
-        self.assertEqual(response, "Test response")
+        with patch('tools.plan_exec_llm.query_llm') as mock_plan_query_llm:
+            mock_plan_query_llm.return_value = "Test response"
+            response = query_llm_with_plan("Test plan", "Test prompt", "Test file content", provider="openai", model="gpt-4o")
+            self.assertEqual(response, "Test response")
+            mock_plan_query_llm.assert_called_with(unittest.mock.ANY, model="gpt-4o", provider="openai")
 
-        response = query_llm("Test plan", "Test prompt")
-        self.assertEqual(response, "Test response")
+            # Test with DeepSeek
+            response = query_llm_with_plan("Test plan", "Test prompt", provider="deepseek")
+            self.assertEqual(response, "Test response")
+            mock_plan_query_llm.assert_called_with(unittest.mock.ANY, model=None, provider="deepseek")
 
-        response = query_llm("Test plan")
-        self.assertEqual(response, "Test response")
+            # Test with Anthropic
+            response = query_llm_with_plan("Test plan", provider="anthropic")
+            self.assertEqual(response, "Test response")
+            mock_plan_query_llm.assert_called_with(unittest.mock.ANY, model=None, provider="anthropic")
 
-        # Verify the OpenAI client was called with correct parameters
-        mock_client.chat.completions.create.assert_called_with(
-            model="o1",
-            messages=[
-                {"role": "system", "content": ""},
-                {"role": "user", "content": unittest.mock.ANY}
-            ],
-            response_format={"type": "text"},
-            reasoning_effort="low"
-        )
+            # Verify the prompt format
+            calls = mock_plan_query_llm.call_args_list
+            for call in calls:
+                prompt = call[0][0]
+                self.assertIn("Multi-Agent Scratchpad", prompt)
+                self.assertIn("Test plan", prompt)
 
 if __name__ == '__main__':
     unittest.main() 

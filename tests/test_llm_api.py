@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock, mock_open
 from tools.llm_api import create_llm_client, query_llm, load_environment
-from tools.token_tracker import TokenUsage, APIResponse
+from tools.token_tracker import TokenUsage, APIResponse, get_token_tracker
 import os
 import google.generativeai as genai
 import io
@@ -202,8 +202,23 @@ class TestLLMAPI(unittest.TestCase):
         )
 
     @patch('tools.llm_api.create_llm_client')
-    def test_query_deepseek(self, mock_create_client):
+    @patch('tools.llm_api.get_token_tracker')
+    def test_query_deepseek(self, mock_get_tracker, mock_create_client):
+        """Test querying DeepSeek API with token tracking.
+        
+        DeepSeek uses OpenAI-compatible API but like most models does not support
+        reasoning tokens (only OpenAI's o1 model has this feature).
+        """
         mock_create_client.return_value = self.mock_openai_client
+        mock_tracker = MagicMock()
+        mock_get_tracker.return_value = mock_tracker
+        
+        # Set up mock response with usage data
+        self.mock_openai_response.usage = MagicMock()
+        self.mock_openai_response.usage.prompt_tokens = 10
+        self.mock_openai_response.usage.completion_tokens = 5
+        self.mock_openai_response.usage.total_tokens = 15
+        
         response = query_llm("Test prompt", provider="deepseek", model="deepseek-chat")
         self.assertEqual(response, "Test OpenAI response")
         self.mock_openai_client.chat.completions.create.assert_called_once_with(
@@ -211,9 +226,19 @@ class TestLLMAPI(unittest.TestCase):
             messages=[{"role": "user", "content": [{"type": "text", "text": "Test prompt"}]}],
             temperature=0.7
         )
+        # Verify token usage tracking for OpenAI-style providers
+        self.assertTrue(mock_tracker.track_request.called)
+        api_response = mock_tracker.track_request.call_args[0][0]
+        # Verify reasoning_tokens is None since this is not the o1 model
+        self.assertIsNone(api_response.token_usage.reasoning_tokens)
 
     @patch('tools.llm_api.create_llm_client')
     def test_query_anthropic(self, mock_create_client):
+        """Test querying Anthropic API.
+        
+        Note: Anthropic's API has its own token tracking system that differs from OpenAI's.
+        It does not support reasoning tokens (which is an OpenAI o1-specific feature).
+        """
         mock_create_client.return_value = self.mock_anthropic_client
         response = query_llm("Test prompt", provider="anthropic", model="claude-3-5-sonnet-20241022")
         self.assertEqual(response, "Test Anthropic response")
@@ -222,6 +247,7 @@ class TestLLMAPI(unittest.TestCase):
             max_tokens=1000,
             messages=[{"role": "user", "content": [{"type": "text", "text": "Test prompt"}]}]
         )
+        # Note: Token tracking is not yet implemented for Anthropic
 
     @patch('tools.llm_api.create_llm_client')
     def test_query_gemini(self, mock_create_client):
@@ -243,8 +269,26 @@ class TestLLMAPI(unittest.TestCase):
         )
 
     @patch('tools.llm_api.create_llm_client')
-    def test_query_o1_model(self, mock_create_client):
+    @patch('tools.llm_api.get_token_tracker')
+    def test_query_o1_model(self, mock_get_tracker, mock_create_client):
+        """Test querying OpenAI's o1 model.
+        
+        The o1 model is special in that it:
+        1. Uses a different response format
+        2. Has a reasoning_effort parameter
+        3. Is the only model that provides reasoning_tokens in its response
+        """
         mock_create_client.return_value = self.mock_openai_client
+        mock_tracker = MagicMock()
+        mock_get_tracker.return_value = mock_tracker
+        
+        # Set up mock response with usage data including reasoning tokens
+        self.mock_openai_response.usage = MagicMock()
+        self.mock_openai_response.usage.prompt_tokens = 10
+        self.mock_openai_response.usage.completion_tokens = 5
+        self.mock_openai_response.usage.total_tokens = 15
+        self.mock_openai_response.usage.reasoning_tokens = 3  # o1 model provides this
+        
         response = query_llm("Test prompt", provider="openai", model="o1")
         self.assertEqual(response, "Test OpenAI response")
         self.mock_openai_client.chat.completions.create.assert_called_once_with(
@@ -253,6 +297,11 @@ class TestLLMAPI(unittest.TestCase):
             response_format={"type": "text"},
             reasoning_effort="low"
         )
+        
+        # Verify token usage tracking includes reasoning tokens for o1 model
+        self.assertTrue(mock_tracker.track_request.called)
+        api_response = mock_tracker.track_request.call_args[0][0]
+        self.assertEqual(api_response.token_usage.reasoning_tokens, 3)
 
     @patch('tools.llm_api.create_llm_client')
     def test_query_with_existing_client(self, mock_create_client):

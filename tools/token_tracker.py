@@ -14,6 +14,16 @@ from datetime import datetime
 
 @dataclass
 class TokenUsage:
+    """Token usage information for an LLM API request.
+    
+    Attributes:
+        prompt_tokens: Number of tokens in the input prompt
+        completion_tokens: Number of tokens in the model's response
+        total_tokens: Total number of tokens used (prompt + completion)
+        reasoning_tokens: Number of tokens used for reasoning (only available for OpenAI's o1 model)
+            This is a special field that's only populated when using OpenAI's o1 model.
+            For all other models (including other OpenAI models), this will be None.
+    """
     prompt_tokens: int
     completion_tokens: int
     total_tokens: int
