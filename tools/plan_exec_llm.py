@@ -3,11 +3,11 @@
 import argparse
 import os
 from pathlib import Path
-from openai import OpenAI
 from dotenv import load_dotenv
 import sys
 import time
-from .token_tracker import TokenUsage, APIResponse, get_token_tracker
+from tools.token_tracker import TokenUsage, APIResponse, get_token_tracker
+from tools.llm_api import query_llm, create_llm_client
 
 STATUS_FILE = '.cursorrules'
 
@@ -52,17 +52,8 @@ def read_file_content(file_path):
         print(f"Error reading {file_path}: {e}", file=sys.stderr)
         return None
 
-def create_llm_client():
-    """Create OpenAI client"""
-    api_key = os.getenv('OPENAI_API_KEY')
-    if not api_key:
-        raise ValueError("OPENAI_API_KEY not found in environment variables")
-    return OpenAI(api_key=api_key)
-
-def query_llm(plan_content, user_prompt=None, file_content=None):
+def query_llm_with_plan(plan_content, user_prompt=None, file_content=None, provider="openai", model=None):
     """Query the LLM with combined prompts"""
-    client = create_llm_client()
-    
     # Combine prompts
     system_prompt = """"""
     
@@ -93,54 +84,16 @@ Project Plan and Status:
 We will do the actual changes in the .cursorrules file.
 """
 
-    try:
-        start_time = time.time()
-        response = client.chat.completions.create(
-            model="o1",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": combined_prompt}
-            ],
-            response_format={"type": "text"},
-            reasoning_effort="low"
-        )
-        thinking_time = time.time() - start_time
-        
-        # Track token usage
-        token_usage = TokenUsage(
-            prompt_tokens=response.usage.prompt_tokens,
-            completion_tokens=response.usage.completion_tokens,
-            total_tokens=response.usage.total_tokens,
-            reasoning_tokens=response.usage.completion_tokens_details.reasoning_tokens if hasattr(response.usage, 'completion_tokens_details') else None
-        )
-        
-        # Calculate cost
-        cost = get_token_tracker().calculate_openai_cost(
-            token_usage.prompt_tokens,
-            token_usage.completion_tokens,
-            "o1"
-        )
-        
-        # Track the request
-        api_response = APIResponse(
-            content=response.choices[0].message.content,
-            token_usage=token_usage,
-            cost=cost,
-            thinking_time=thinking_time,
-            provider="openai",
-            model="o1"
-        )
-        get_token_tracker().track_request(api_response)
-        
-        return response.choices[0].message.content
-    except Exception as e:
-        print(f"Error querying LLM: {e}", file=sys.stderr)
-        return None
+    # Use the imported query_llm function
+    response = query_llm(combined_prompt, model=model, provider=provider)
+    return response
 
 def main():
-    parser = argparse.ArgumentParser(description='Query OpenAI o1 model with project plan context')
+    parser = argparse.ArgumentParser(description='Query LLM with project plan context')
     parser.add_argument('--prompt', type=str, help='Additional prompt to send to the LLM', required=False)
     parser.add_argument('--file', type=str, help='Path to a file whose content should be included in the prompt', required=False)
+    parser.add_argument('--provider', choices=['openai','anthropic','gemini','local','deepseek','azure'], default='openai', help='The API provider to use')
+    parser.add_argument('--model', type=str, help='The model to use (default depends on provider)')
     args = parser.parse_args()
 
     # Load environment variables
@@ -157,7 +110,7 @@ def main():
             sys.exit(1)
 
     # Query LLM and output response
-    response = query_llm(plan_content, args.prompt, file_content)
+    response = query_llm_with_plan(plan_content, args.prompt, file_content, provider=args.provider, model=args.model)
     if response:
         print('Following is the instruction on how to revise the Multi-Agent Scratchpad section in .cursorrules:')
         print('========================================================')

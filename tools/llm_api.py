@@ -187,7 +187,7 @@ def query_llm(prompt: str, client=None, model=None, provider="openai", image_pat
                 prompt_tokens=response.usage.prompt_tokens,
                 completion_tokens=response.usage.completion_tokens,
                 total_tokens=response.usage.total_tokens,
-                reasoning_tokens=response.usage.completion_tokens_details.reasoning_tokens if hasattr(response.usage, 'completion_tokens_details') else None
+                reasoning_tokens=None  # Only o1 model provides reasoning tokens
             )
             
             # Calculate cost
