@@ -199,7 +199,7 @@ def query_llm(prompt: str, client=None, model=None, provider="openai", image_pat
                 prompt_tokens=response.usage.prompt_tokens,
                 completion_tokens=response.usage.completion_tokens,
                 total_tokens=response.usage.total_tokens,
-                reasoning_tokens=response.usage.reasoning_tokens if model == "o1" else None  # Only o1 model provides reasoning tokens
+                reasoning_tokens=response.usage.reasoning_tokens if model.lower().startswith("o") else None  # Only checks if model starts with "o", e.g., o1, o1-preview, o1-mini, o3, etc. Can update this logic to specific models in the future.
             )
             
             # Calculate cost
