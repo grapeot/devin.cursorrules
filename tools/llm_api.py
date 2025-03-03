@@ -148,9 +148,9 @@ def query_llm(prompt: str, client=None, model=None, provider="openai", image_pat
             elif provider == "siliconflow":
                 model = "deepseek-ai/DeepSeek-R1"
             elif provider == "anthropic":
-                model = "claude-3-sonnet-20240229"
+                model = "claude-3-7-sonnet-20250219"
             elif provider == "gemini":
-                model = "gemini-pro"
+                model = "gemini-2.0-flash-exp"
             elif provider == "local":
                 model = "Qwen/Qwen2.5-32B-Instruct-AWQ"
         
@@ -255,7 +255,7 @@ def main():
         elif args.provider == "siliconflow":
             args.model = "deepseek-ai/DeepSeek-R1"
         elif args.provider == 'anthropic':
-            args.model = "claude-3-5-sonnet-20241022"
+            args.model = "claude-3-7-sonnet-20250219"
         elif args.provider == 'gemini':
             args.model = "gemini-2.0-flash-exp"
         elif args.provider == 'azure':
