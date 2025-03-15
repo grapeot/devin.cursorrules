@@ -21,9 +21,9 @@ The interface consists of three main parts:
 
 ![Basic Interface](images/image10.png)
 
-Since we'll mainly use Cursor's Agentic AI features, I recommend making the composer sidebar wider.
+Since we'll mainly use Cursor's Agentic AI features, I recommend making the chat sidebar wider.
 
-Like VS Code, many of Cursor's features are accessed through commands in the command palette. You can press F1 to bring up the command palette. For example, if you can't remember how to bring up the composer panel, you can simply type "composer" in the command palette. It will show you options, and you can click the appropriate one to bring up the composer again. Commands also show keyboard shortcuts on the right, which you can memorize for faster access in the future.
+Like VS Code, many of Cursor's features are accessed through commands in the command palette. You can press F1 to bring up the command palette. For example, if you can't remember how to bring up the chat panel, you can simply type "chat" in the command palette. It will show you options, and you can click the appropriate one to bring up the chat again. Commands also show keyboard shortcuts on the right, which you can memorize for faster access in the future.
 
 ![Command Palette](images/image4.png)
 
@@ -31,15 +31,11 @@ Like VS Code, many of Cursor's features are accessed through commands in the com
 
 ## Important Initial Settings
 
-For our use of Cursor's Agentic AI features, there are two crucial configurations to note:
+Cursor now provides a unified AI experience with Agent mode as the default. This means you no longer need to worry about switching between different modes like Chat, Composer, or Agent - there's just one smart interface that adapts to your needs.
 
-1. At the top of the chat panel, there are three tabs: Chat, Composer, and Bug Finder. We'll primarily use the Composer tab. Be careful not to switch to the Chat tab, which uses the old interaction experience.
+In the bottom left corner of the chat panel, you can specify which AI model you want to use. Currently, Cursor supports several AI models including Claude, GPT-4o, and o3-mini. We generally recommend using Claude as it performs best in various scenarios, but feel free to experiment with other models.
 
-2. In the bottom right corner of the Composer panel, there's a toggle switch between "Normal" and "Agent". Make sure to switch it to "Agent" mode.
-
-Additionally, in the bottom left corner of the chat panel, you can specify which AI model you want to use. Currently, Cursor's Agent mode supports three AI models: Claude, GPT-4o, and o3-mini. We generally recommend using Claude as it performs best in various scenarios, but feel free to experiment with other models.
-
-Your configuration should look like this (note the Composer tab in the top left, Agent mode in the bottom right, and Claude in the bottom left):
+Your configuration should look like this (note Claude in the bottom left):
 
 ![Configuration Settings](images/image8.png)
 
@@ -133,8 +129,6 @@ Next, you can use `cursor my-cursor-project` in the command line to open your ne
 Using this enhanced Cursor project is similar to using a regular Cursor project, but now we have access to additional tools to better complete our tasks. For example, we can say "search recent news on OpenAI" in the prompt.
 
 ![Enhanced Tools Example](images/image6.png)
-
-Remember to ensure you're in Composer and Agent mode before clicking "submit".
 
 In this newly configured workspace, you'll notice Cursor has gained some additional capabilities. For instance, it will first edit our `.cursorrules` file for planning, then call our system search tools, and finally browse more web pages to get the latest information. 
 
