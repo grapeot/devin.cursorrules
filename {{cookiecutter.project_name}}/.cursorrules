@@ -90,7 +90,7 @@ If needed, you can further use the `web_scraper.py` file to scrape the web page 
 
 ## User Specified Lessons
 
-- You have a python3 venv in ./venv. Use it.
+- You have a python venv in ./venv. Always use (activate) it when doing python development. First, to check whether 'uv' is available, use `which uv`. If that's the case, use: `uv pip install` to install packages. Otherwise, fall back to `pip`.
 - Include info useful for debugging in the program output.
 - Read the file before you try to edit it.
 - Due to Cursor's limit, when you use `git` and `gh` and need to submit a multiline commit message, first write the message in a file, and then use `git commit -F <filename>` or similar command to commit. And then remove the file. Include "[Cursor] " in the commit message and PR title.

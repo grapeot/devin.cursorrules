@@ -1,6 +1,7 @@
 import os
 import shutil
 import platform
+import subprocess
 
 def setup_env_file():
     """Set up the .env file with API key if provided"""
@@ -116,21 +117,46 @@ def handle_ide_rules():
             with open('.github/copilot-instructions.md', 'w') as f:
                 f.writelines(content)
 
+def check_uv_installed():
+    """Check if uv is installed"""
+    try:
+        # Use subprocess.run with capture_output to check if uv is available
+        result = subprocess.run(['which', 'uv'], capture_output=True, text=True)
+        return result.returncode == 0
+    except Exception:
+        return False
+
 def main():
     """Main function to set up the project"""
     setup_env_file()
     handle_ide_rules()
     
+    # Check if uv is installed
+    use_uv = check_uv_installed()
+    
     # Create virtual environment
     print("\nCreating virtual environment...")
-    os.system('python3 -m venv venv')
+    if use_uv:
+        print("Using uv to create virtual environment...")
+        os.system('uv venv venv')
+    else:
+        print("Using pip to create virtual environment...")
+        os.system('python3 -m venv venv')
     
     # Install dependencies
     print("\nInstalling dependencies...")
     if platform.system() == 'Windows':
-        os.system('venv\\Scripts\\pip install -r requirements.txt')
+        if use_uv:
+            venv_python = os.path.abspath("venv\\Scripts\\python.exe")
+            os.system(f'uv pip install --python {venv_python} -r requirements.txt')
+        else:
+            os.system('venv\\Scripts\\pip install -r requirements.txt')
     else:
-        os.system('venv/bin/pip3 install -r requirements.txt')
+        if use_uv:
+            venv_python = os.path.abspath("venv/bin/python")
+            os.system(f'uv pip install --python {venv_python} -r requirements.txt')
+        else:
+            os.system('venv/bin/pip3 install -r requirements.txt')
     
     print("\nSetup completed successfully!")
     print("To get started:")
