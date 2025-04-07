@@ -1,4 +1,4 @@
-#!/usr/bin/env /workspace/tmp_windsurf/venv/bin/python3
+#!/usr/bin/env python3
 
 import google.generativeai as genai
 from openai import OpenAI, AzureOpenAI
@@ -68,10 +68,12 @@ def encode_image_file(image_path: str) -> tuple[str, str]:
 def create_llm_client(provider="openai"):
     if provider == "openai":
         api_key = os.getenv('OPENAI_API_KEY')
+        base_url = os.getenv('OPENAI_BASE_URL', "https://api.openai.com/v1")
         if not api_key:
             raise ValueError("OPENAI_API_KEY not found in environment variables")
         return OpenAI(
-            api_key=api_key
+            api_key=api_key,
+            base_url=base_url
         )
     elif provider == "azure":
         api_key = os.getenv('AZURE_OPENAI_API_KEY')
@@ -140,7 +142,7 @@ def query_llm(prompt: str, client=None, model=None, provider="openai", image_pat
         # Set default model
         if model is None:
             if provider == "openai":
-                model = "gpt-4o"
+                model = os.getenv('OPENAI_MODEL_DEPLOYMENT', 'gpt-4o')
             elif provider == "azure":
                 model = os.getenv('AZURE_OPENAI_MODEL_DEPLOYMENT', 'gpt-4o-ms')  # Get from env with fallback
             elif provider == "deepseek":
