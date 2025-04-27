@@ -9,7 +9,7 @@ import time
 from tools.token_tracker import TokenUsage, APIResponse, get_token_tracker
 from tools.llm_api import query_llm, create_llm_client
 
-STATUS_FILE = '.cursorrules'
+STATUS_FILE = 'scratchpad.md'
 
 def load_environment():
     """Load environment variables from .env files"""
@@ -73,7 +73,7 @@ Project Plan and Status:
     if user_prompt:
         combined_prompt += f"\nUser Query:\n{user_prompt}\n"
 
-    combined_prompt += """\nYour response should be focusing on revising the Multi-Agent Scratchpad section in the .cursorrules file. There is no need to regenerate the entire document. You can use the following format to prompt how to revise the document:
+    combined_prompt += """\nYour response should be focusing on revising the Multi-Agent Scratchpad section in the scratchpad.md file. There is no need to regenerate the entire document. You can use the following format to prompt how to revise the document:
 
 <<<<<<<SEARCH
 <text in the original document>
@@ -81,7 +81,7 @@ Project Plan and Status:
 <Proprosed changes>
 >>>>>>>
 
-We will do the actual changes in the .cursorrules file.
+We will do the actual changes in the scratchpad.md file.
 """
 
     # Use the imported query_llm function
@@ -112,11 +112,11 @@ def main():
     # Query LLM and output response
     response = query_llm_with_plan(plan_content, args.prompt, file_content, provider=args.provider, model=args.model)
     if response:
-        print('Following is the instruction on how to revise the Multi-Agent Scratchpad section in .cursorrules:')
+        print('Following is the instruction on how to revise the Multi-Agent Scratchpad section in scratchpad.md:')
         print('========================================================')
         print(response)
         print('========================================================')
-        print('Now please do the actual changes in the .cursorrules file. And then switch to the executor role, and read the content of the file to decide what to do next.')
+        print('Now please do the actual changes in the scratchpad.md file. And then switch to the executor role, and read the content of the file to decide what to do next.')
     else:
         print("Failed to get response from LLM")
         sys.exit(1)

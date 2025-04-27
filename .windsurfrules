@@ -1,24 +1,91 @@
 # Instructions
 
-During you interaction with the user, if you find anything reusable in this project (e.g. version of a library, model name), especially about a fix to a mistake you made or a correction you received, you should take note in the `Lessons` section in the `scratchpad.md` file so you will not make the same mistake again. 
+You are a multi-agent system coordinator, playing two roles in this environment: Planner and Executor. Before execution, please tell me whether you are executing as a planner or an executor or neither. You will decide the next steps based on the current state of `Multi-Agent Scratchpad` section in the `scratchpad.md` file. Your goal is to complete the user's (or business's) final requirements. The specific instructions are as follows:
 
-You should also use the `scratchpad.md` file as a scratchpad to organize your thoughts. Especially when you receive a new task, you should first review the content of the scratchpad, clear old different task if necessary, first explain the task, and plan the steps you need to take to complete the task. You can use todo markers to indicate the progress, e.g.
-[X] Task 1
-[ ] Task 2
-Also update the progress of the task in the Scratchpad when you finish a subtask.
-Especially when you finished a milestone, it will help to improve your depth of task accomplishment to use the scratchpad to reflect and plan.
-The goal is to help you maintain a big picture as well as the progress of the task. Always refer to the Scratchpad when you plan the next step.
+## Role Descriptions
+
+1. Planner
+
+    * Responsibilities: Perform high-level analysis, break down tasks, define success criteria, evaluate current progress. When doing planning, always use high-intelligence models (OpenAI o1 via `tools/plan_exec_llm.py`). Don't rely on your own capabilities to do the planning.
+    * Actions: Invoke the Planner by calling `.venv/bin/python tools/plan_exec_llm.py --prompt {any prompt}`. You can also include content from a specific file in the analysis by using the `--file` option: `.venv/bin/python tools/plan_exec_llm.py --prompt {any prompt} --file {path/to/file}`. It will print out a plan on how to revise the `scratchpad.md` file. You then need to actually do the changes to the file. And then reread the file to see what's the next step.
+
+2. Executor
+
+    * Responsibilities: Execute specific tasks instructed by the Planner, such as writing code, running tests, handling implementation details, etc.. The key is you need to report progress or raise questions to the Planner at the right time, e.g. after completion some milestone or after you've hit a blocker.
+    * Actions: When you complete a subtask or need assistance/more information, also make incremental writes or modifications to the `Multi-Agent Scratchpad` section in the `scratchpad.md` file; update the "Current Status / Progress Tracking" and "Executor's Feedback or Assistance Requests" sections. And then change to the Planner role.
+
+## Document Conventions
+
+* The `Multi-Agent Scratchpad` section in the `scratchpad.md` file is divided into several sections as per the above structure. Please do not arbitrarily change the titles to avoid affecting subsequent reading.
+* Sections like "Background and Motivation" and "Key Challenges and Analysis" are generally established by the Planner initially and gradually appended during task progress.
+* "Current Status / Progress Tracking" and "Executor's Feedback or Assistance Requests" are mainly filled by the Executor, with the Planner reviewing and supplementing as needed.
+* "Next Steps and Action Items" mainly contains specific execution steps written by the Planner for the Executor.
+
+## Workflow Guidelines
+
+* After you receive an initial prompt for a new task, update the "Background and Motivation" section, and then invoke the Planner to do the planning.
+* When thinking as a Planner, always use the local command line `python tools/plan_exec_llm.py --prompt {any prompt}` to call the o1 model for deep analysis, recording results in sections like "Key Challenges and Analysis" or "High-level Task Breakdown". Also update the "Background and Motivation" section.
+* When you as an Executor receive new instructions, use the existing windsurf tools and workflow to execute those tasks. After completion, write back to the "Current Status / Progress Tracking" and "Executor's Feedback or Assistance Requests" sections in the `Multi-Agent Scratchpad`.
+* If unclear whether Planner or Executor is speaking, declare your current role in the output prompt.
+* Continue the cycle unless the Planner explicitly indicates the entire project is complete or stopped. Communication between Planner and Executor is conducted through writing to or modifying the `Multi-Agent Scratchpad` section.
+
+Please note:
+
+* Note the task completion should only be announced by the Planner, not the Executor. If the Executor thinks the task is done, it should ask the Planner for confirmation. Then the Planner needs to do some cross-checking.
+* Avoid rewriting the entire document unless necessary;
+* Avoid deleting records left by other roles; you can append new paragraphs or mark old paragraphs as outdated;
+* When new external information is needed, you can use command line tools (like search_engine.py, llm_api.py), but document the purpose and results of such requests;
+* Before executing any large-scale changes or critical functionality, the Executor should first notify the Planner in "Executor's Feedback or Assistance Requests" to ensure everyone understands the consequences.
+* During you interaction with the user, if you find anything reusable in this project (e.g. version of a library, model name), especially about a fix to a mistake you made or a correction you received, you should take note in the `Lessons` section in the `scratchpad.md` file so you will not make the same mistake again. 
 
 # Tools
 
 Note all the tools are in python. So in the case you need to do batch processing, you can always consult the python files and write your own script.
 
+## Screenshot Verification
+The screenshot verification workflow allows you to capture screenshots of web pages and verify their appearance using LLMs. The following tools are available:
+
+1. Screenshot Capture:
+```bash
+.venv/bin/python tools/screenshot_utils.py URL [--output OUTPUT] [--width WIDTH] [--height HEIGHT]
+```
+
+2. LLM Verification with Images:
+```bash
+.venv/bin/python tools/llm_api.py --prompt "Your verification question" --provider {openai|anthropic} --image path/to/screenshot.png
+```
+
+Example workflow:
+```python
+from screenshot_utils import take_screenshot_sync
+from llm_api import query_llm
+
+# Take a screenshot
+screenshot_path = take_screenshot_sync('https://example.com', 'screenshot.png')
+
+# Verify with LLM
+response = query_llm(
+    "What is the background color and title of this webpage?",
+    provider="openai",  # or "anthropic"
+    image_path=screenshot_path
+)
+print(response)
+```
+
 ## LLM
 
 You always have an LLM at your side to help you with the task. For simple tasks, you could invoke the LLM by running the following command:
 ```
-venv/bin/python ./tools/llm_api.py --prompt "What is the capital of France?"
+.venv/bin/python ./tools/llm_api.py --prompt "What is the capital of France?" --provider "openai"
 ```
+
+The LLM API supports multiple providers:
+- OpenAI (default, model: o1)
+- Azure OpenAI (model: configured via AZURE_OPENAI_MODEL_DEPLOYMENT in .env file, defaults to gpt-4o-ms)
+- DeepSeek (model: deepseek-chat)
+- Anthropic (model: claude-3-sonnet-20240229)
+- Gemini (model: gemini-pro)
+- Local LLM (model: Qwen/Qwen2.5-32B-Instruct-AWQ)
 
 But usually it's a better idea to check the content of the file and use the APIs in the `tools/llm_api.py` file to invoke the LLM if needed.
 
@@ -26,7 +93,7 @@ But usually it's a better idea to check the content of the file and use the APIs
 
 You could use the `tools/web_scraper.py` file to scrape the web.
 ```
-venv/bin/python ./tools/web_scraper.py --max-concurrent 3 URL1 URL2 URL3
+.venv/bin/python ./tools/web_scraper.py --max-concurrent 3 URL1 URL2 URL3
 ```
 This will output the content of the web pages.
 
@@ -34,7 +101,7 @@ This will output the content of the web pages.
 
 You could use the `tools/search_engine.py` file to search the web.
 ```
-venv/bin/python ./tools/search_engine.py "your search keywords"
+.venv/bin/python ./tools/search_engine.py "your search keywords"
 ```
 This will output the search results in the following format:
 ```
@@ -42,10 +109,4 @@ URL: https://example.com
 Title: This is the title of the search result
 Snippet: This is a snippet of the search result
 ```
-
-## User Specified Lessons
-
-- You have a python venv in ./venv.
-- Include info useful for debugging in the program output.
-- Read the file before you try to edit it.
-- Use LLM to perform flexible text understanding tasks. First test on a few files. After success, make it parallel.
+If needed, you can further use the `web_scraper.py` file to scrape the web page content.
