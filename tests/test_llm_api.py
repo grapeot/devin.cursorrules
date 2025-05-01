@@ -105,11 +105,16 @@ class TestLLMAPI(unittest.TestCase):
         self.mock_anthropic_response.content = [self.mock_anthropic_content]
         self.mock_anthropic_client.messages.create.return_value = self.mock_anthropic_response
         
-        # Set up Gemini-style response
-        self.mock_gemini_model = MagicMock()
+        # Set up Gemini-style response - Updated for Chat Session
+        self.mock_gemini_chat_session = MagicMock() # Mock for the chat session
         self.mock_gemini_response = MagicMock()
         self.mock_gemini_response.text = "Test Gemini response"
-        self.mock_gemini_model.generate_content.return_value = self.mock_gemini_response
+        self.mock_gemini_chat_session.send_message.return_value = self.mock_gemini_response # Mock send_message
+        
+        self.mock_gemini_model = MagicMock() # Mock for the GenerativeModel
+        self.mock_gemini_model.start_chat.return_value = self.mock_gemini_chat_session # Mock start_chat
+        
+        self.mock_gemini_client = MagicMock() # Mock for the genai module itself
         self.mock_gemini_client.GenerativeModel.return_value = self.mock_gemini_model
         
         # Set up SiliconFlow-style response
@@ -150,7 +155,11 @@ class TestLLMAPI(unittest.TestCase):
     def test_create_openai_client(self, mock_openai):
         mock_openai.return_value = self.mock_openai_client
         client = create_llm_client("openai")
-        mock_openai.assert_called_once_with(api_key='test-openai-key')
+        # Add base_url to the assertion
+        mock_openai.assert_called_once_with(
+            api_key='test-openai-key',
+            base_url=os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
+        )
         self.assertEqual(client, self.mock_openai_client)
 
     @unittest.skipIf(skip_llm_tests, skip_message)
@@ -274,7 +283,8 @@ class TestLLMAPI(unittest.TestCase):
         response = query_llm("Test prompt", provider="anthropic")
         self.assertEqual(response, "Test Anthropic response")
         self.mock_anthropic_client.messages.create.assert_called_once_with(
-            model="claude-3-sonnet-20240229",
+            # Update model name to the current default
+            model="claude-3-7-sonnet-20250219",
             max_tokens=1000,
             messages=[{"role": "user", "content": [{"type": "text", "text": "Test prompt"}]}]
         )
@@ -282,11 +292,15 @@ class TestLLMAPI(unittest.TestCase):
     @unittest.skipIf(skip_llm_tests, skip_message)
     @patch('tools.llm_api.create_llm_client')
     def test_query_gemini(self, mock_create_client):
-        mock_create_client.return_value = self.mock_gemini_client
+        mock_create_client.return_value = self.mock_gemini_client # Use the updated mock from setUp
         response = query_llm("Test prompt", provider="gemini")
         self.assertEqual(response, "Test Gemini response")
-        self.mock_gemini_client.GenerativeModel.assert_called_once_with("gemini-pro")
-        self.mock_gemini_model.generate_content.assert_called_once_with("Test prompt")
+        # Update assertions to check chat flow
+        self.mock_gemini_client.GenerativeModel.assert_called_once_with("gemini-2.0-flash-exp")
+        self.mock_gemini_model.start_chat.assert_called_once_with(
+            history=[{'role': 'user', 'parts': ["Test prompt"]}]
+        )
+        self.mock_gemini_chat_session.send_message.assert_called_once_with("Test prompt")
 
     @unittest.skipIf(skip_llm_tests, skip_message)
     @patch('tools.llm_api.create_llm_client')
