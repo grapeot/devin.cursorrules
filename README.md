@@ -1,6 +1,6 @@
 # Transform your $20 Cursor into a Devin-like AI Assistant
 
-This repository gives you everything needed to supercharge your Cursor/Windsurf IDE or GitHub Copilot with **advanced** agentic AI capabilities—similar to the $500/month Devin—but at a fraction of the cost. In under a minute, you'll gain:
+This repository gives you everything needed to supercharge your Cursor/Windsurf IDE or GitHub Copilot with **advanced** agentic AI capabilities—similar to the $25/task (calculated from $2.25/ACU in the Core plan and 5-12.5ACU complexity horizon in the docs) Devin—but at a fraction of the cost. In under a minute, you'll gain:
 
 * Automated planning and self-evolution, so your AI "thinks before it acts" and learns from mistakes
 * Extended tool usage, including web browsing, search engine queries, and LLM-driven text/image analysis
@@ -8,7 +8,7 @@ This repository gives you everything needed to supercharge your Cursor/Windsurf 
 
 ## Why This Matters
 
-Devin impressed many by acting like an intern who writes its own plan, updates that plan as it progresses, and even evolves based on your feedback. But you don't need Devin's $25/task (from $2.25/ACU in the Core plan) subscription to get most of that functionality. By customizing the .cursorrules file, plus a few Python scripts, you'll unlock the same advanced features inside Cursor.
+Devin impressed many by acting like an intern who writes its own plan, updates that plan as it progresses, and even evolves based on your feedback. But you don't need Devin's $25/task pricing to get most of that functionality. By customizing the .cursorrules file, plus a few Python scripts, you'll unlock the same advanced features inside Cursor.
 
 ## Key Highlights
 
