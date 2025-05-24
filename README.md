@@ -8,7 +8,7 @@ This repository gives you everything needed to supercharge your Cursor/Windsurf 
 
 ## Why This Matters
 
-Devin impressed many by acting like an intern who writes its own plan, updates that plan as it progresses, and even evolves based on your feedback. But you don't need Devin's $500/month subscription to get most of that functionality. By customizing the .cursorrules file, plus a few Python scripts, you'll unlock the same advanced features inside Cursor.
+Devin impressed many by acting like an intern who writes its own plan, updates that plan as it progresses, and even evolves based on your feedback. But you don't need Devin's $25/task (from $2.25/ACU in the Core plan) subscription to get most of that functionality. By customizing the .cursorrules file, plus a few Python scripts, you'll unlock the same advanced features inside Cursor.
 
 ## Key Highlights
 
@@ -63,6 +63,6 @@ For a detailed walkthrough of setting up and using devin.cursorrules with Cursor
 
 ## Want the Details?
 
-Check out our [blog post](https://yage.ai/cursor-to-devin-en.html) on how we turned $20 into $500-level AI capabilities in just one hour. It explains the philosophy behind process planning, self-evolution, and fully automated workflows. You'll also find side-by-side comparisons of Devin, Cursor, and Windsurf, plus a step-by-step tutorial on setting this all up from scratch.
+Check out our [blog post](https://yage.ai/cursor-to-devin-en.html) on how we turned $20/month into $25/task level AI capabilities in just one hour. It explains the philosophy behind process planning, self-evolution, and fully automated workflows. You'll also find side-by-side comparisons of Devin, Cursor, and Windsurf, plus a step-by-step tutorial on setting this all up from scratch.
 
 License: MIT
